@@ -1,0 +1,399 @@
+---
+/**
+ * banner-01 — bandeau de titre de page intérieure
+ *
+ * Fil d'Ariane + titre. C'est le premier bloc de toute page qui n'est pas
+ * l'accueil. Il porte aussi le schema BreadcrumbList.
+ *
+ * `headingLevel` et `cta` ont été ajoutées ici le 20/09 puis REPORTÉES en
+ * bibliothèque : cette copie et blocs-astro/ rendent le même HTML.
+ * La valeur par défaut de `headingLevel` est passée à `h2` le 20/09, des deux
+ * côtés : les deux seuls consommateurs sont ce projet et la vitrine interne.
+ */
+
+export interface Crumb {
+	label: string;
+	/** Absent = page courante (dernier maillon, non cliquable). */
+	href?: string;
+}
+
+export interface Props {
+	title?: string;
+	subtitle?: string;
+	crumbs?: Crumb[];
+	/** `dark` (défaut) · `alt` fond clair teinté · `image` photo en fond. */
+	tone?: "dark" | "alt" | "image";
+	imgSrc?: string;
+	imgAlt?: string;
+	imgWidth?: number;
+	imgHeight?: number;
+	overlay?: number;
+	/** Émet le JSON-LD BreadcrumbList. Nécessite `siteUrl` pour des URLs absolues. */
+	schema?: boolean;
+	siteUrl?: string;
+	/**
+	 * Niveau du titre. **h2 par défaut** depuis le 20/09 : un bandeau n'est
+	 * presque jamais le titre principal d'une page. Passe h1 quand il ouvre
+	 * vraiment une page intérieure et qu'aucun autre h1 n'existe.
+	 */
+	headingLevel?: "h1" | "h2";
+	/** Bouton d'appel, à droite du titre en grand écran. */
+	cta?: { label: string; href: string } | null;
+}
+
+const {
+	title = "Titre de la page",
+	subtitle,
+	crumbs = [{ label: "Accueil", href: "/" }, { label: "Titre de la page" }],
+	tone = "dark",
+	imgSrc,
+	imgAlt = "",
+	imgWidth = 1920,
+	imgHeight = 600,
+	overlay = 0.66,
+	schema = true,
+	siteUrl = "",
+	headingLevel = "h2",
+	cta = null,
+} = Astro.props;
+
+const Heading = headingLevel;
+
+const abs = (href: string) => (siteUrl ? new URL(href, siteUrl).toString() : href);
+
+const breadcrumbLd =
+	schema && crumbs.length > 0
+		? {
+				"@context": "https://schema.org",
+				"@type": "BreadcrumbList",
+				itemListElement: crumbs.map((c, i) => ({
+					"@type": "ListItem",
+					position: i + 1,
+					name: c.label,
+					...(c.href ? { item: abs(c.href) } : {}),
+				})),
+			}
+		: null;
+
+const isDark = tone === "dark" || tone === "image";
+---
+
+<section class={`banner01 banner01--${tone} ${isDark ? "on-dark" : ""}`}>
+	{
+		tone === "image" && imgSrc && (
+			<img class="banner01__img" src={imgSrc} alt={imgAlt} width={imgWidth} height={imgHeight} loading="eager" decoding="async" />
+		)
+	}
+	{tone === "image" && <div class="banner01__veil" style={`--banner-overlay:${overlay}`}></div>}
+
+	<div class="banner01__inner">
+		{
+			crumbs.length > 0 && (
+				<nav class="banner01__crumbs" aria-label="Fil d'Ariane">
+					<ol class="banner01__crumb-list">
+						{crumbs.map((c, i) => (
+							<li class="banner01__crumb">
+								{c.href && i < crumbs.length - 1 ? (
+									<a class="banner01__crumb-link" href={c.href}>
+										{c.label}
+									</a>
+								) : (
+									<span aria-current="page">{c.label}</span>
+								)}
+								{i < crumbs.length - 1 && (
+									<svg class="banner01__sep" viewBox="0 0 6 10" width="6" height="10" aria-hidden="true" focusable="false">
+										<path d="M1 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+									</svg>
+								)}
+							</li>
+						))}
+					</ol>
+				</nav>
+			)
+		}
+
+		<div class="banner01__head">
+			<div class="banner01__headings">
+				<Heading class="banner01__title">{title}</Heading>
+				{subtitle && <p class="banner01__subtitle">{subtitle}</p>}
+			</div>
+
+			{
+				cta && (
+					<a class="banner01__cta" href={cta.href}>
+						{/* PEAU §7 : libellé dupliqué qui glisse au survol. Le second
+						    exemplaire est aria-hidden, sinon il est annoncé deux fois. */}
+						<span class="banner01__cta-swap">
+							<span class="banner01__cta-face">{cta.label}</span>
+							<span class="banner01__cta-face banner01__cta-face--ghost" aria-hidden="true">
+								{cta.label}
+							</span>
+						</span>
+					</a>
+				)
+			}
+		</div>
+	</div>
+
+	{breadcrumbLd && <script type="application/ld+json" set:html={JSON.stringify(breadcrumbLd)} />}
+</section>
+
+<style>
+	.banner01,
+	.banner01 *,
+	.banner01 *::before,
+	.banner01 *::after {
+		box-sizing: border-box;
+	}
+
+	.banner01 {
+		position: relative;
+		overflow: hidden;
+		isolation: isolate;
+		font-family: var(--brand-font-body);
+		padding-block: clamp(var(--space-16), 8vw, var(--space-24));
+	}
+
+	.banner01--dark,
+	.banner01--image {
+		background: var(--brand-ink);
+	}
+
+	.banner01--alt {
+		background: var(--color-bg-alt);
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.banner01__img {
+		position: absolute;
+		inset: 0;
+		z-index: -2;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+	}
+
+	.banner01__veil {
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		/* PLANCHER D'OPACITÉ — même mécanisme que hero-01, même valeur calculée :
+		   0,78 est la plus petite opacité qui donne 4,5:1 entre
+		   --color-text-muted et une photo entièrement blanche, avec marge.
+		   À 0,66, le sous-titre et le fil d'Ariane mesuraient 3,23:1.
+		   La prop `overlay` peut monter au-dessus, jamais descendre en dessous. */
+		background: color-mix(in oklab, var(--brand-ink) calc(max(var(--banner-overlay, 0.66) * 100%, 78%)), transparent);
+	}
+
+	.banner01__inner {
+		max-width: var(--container);
+		margin-inline: auto;
+		padding-inline: var(--gutter);
+	}
+
+	/* ------------------------------------------------------------ fil d'Ariane */
+
+	.banner01__crumbs {
+		margin-bottom: var(--space-5);
+	}
+
+	.banner01__crumb-list {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-2);
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		font-size: var(--text-sm);
+		color: var(--color-text-subtle);
+	}
+
+	.banner01__crumb {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-2);
+	}
+
+	.banner01__crumb-link {
+		position: relative;
+		color: var(--color-text-muted);
+		text-decoration: none;
+		border-radius: var(--radius-xs);
+	}
+
+	/* Même idiome que la nav : un trait qui se déploie depuis la gauche. */
+	.banner01__crumb-link::after {
+		content: "";
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: -0.25em;
+		height: 1px;
+		background: var(--color-accent);
+		transform: scaleX(0);
+		transform-origin: left center;
+		transition: transform var(--dur) var(--ease);
+	}
+
+	.banner01__crumb-link:hover {
+		color: var(--color-text);
+	}
+
+	.banner01__crumb-link:hover::after {
+		transform: scaleX(1);
+	}
+
+	.banner01__sep {
+		flex-shrink: 0;
+		color: var(--color-text-subtle);
+		opacity: 0.7;
+	}
+
+	/* ------------------------------------------------------------------ titre */
+
+	/* Titre et bouton sur une ligne en grand écran, empilés en dessous.
+	   minmax(0, 1fr) sur la colonne de texte : sans lui, un titre long
+	   pousse le bouton hors du conteneur. */
+	.banner01__head {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: center;
+		gap: var(--space-8);
+	}
+
+	.banner01__headings {
+		min-width: 0;
+	}
+
+	/* Bouton : pilule, comme tous les boutons du site (PEAU §7).
+	   --color-accent-loud et pas --color-accent : le bandeau est sur fond
+	   sombre, où l'accent plein mesure 3,92:1 (correctif C1 du 19/09). */
+	.banner01__cta {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-height: var(--tap-target);
+		padding: var(--space-3) var(--space-6);
+		font-size: var(--text-base);
+		font-weight: var(--weight-semibold);
+		line-height: 1;
+		white-space: nowrap;
+		color: var(--color-on-action);
+		text-decoration: none;
+		background: var(--color-action);
+		border-radius: var(--radius-pill);
+		transition:
+			background-color var(--dur-fast) var(--ease),
+			transform var(--dur-fast) var(--ease);
+		/* L'aplat ambre ne fait que 2,08:1 contre le creme : c'est cette
+		   bordure qui delimite le bouton sur fond clair (7,03:1). Sur fond
+		   sombre le scope .on-dark la ramene a l'ambre, l'aplat suffit. */
+		border: 1.5px solid var(--color-action-border);
+	
+	}
+
+	.banner01__cta:hover {
+		background: var(--color-action-hover);
+		transform: translateY(-1px);
+	}
+
+	.banner01__cta:active {
+		transform: translateY(0);
+	}
+
+	.banner01__cta-swap {
+		position: relative;
+		display: block;
+		height: 1.25em;
+		overflow: hidden;
+	}
+
+	.banner01__cta-face {
+		display: block;
+		height: 1.25em;
+		line-height: 1.25em;
+		transition: transform var(--dur-slow) var(--ease);
+	}
+
+	.banner01__cta-face--ghost {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		transform: translateY(100%);
+	}
+
+	.banner01__cta:hover .banner01__cta-face,
+	.banner01__cta:focus-visible .banner01__cta-face {
+		transform: translateY(-100%);
+	}
+
+	.banner01__cta:hover .banner01__cta-face--ghost,
+	.banner01__cta:focus-visible .banner01__cta-face--ghost {
+		transform: translateY(0);
+	}
+
+	@media (max-width: 47.999rem) {
+		.banner01__head {
+			grid-template-columns: minmax(0, 1fr);
+			gap: var(--space-6);
+		}
+
+		.banner01__cta {
+			justify-self: start;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.banner01__cta {
+			transition-duration: 0.01ms !important;
+		}
+
+		/* Le libellé qui glisse est neutralisé, pas accéléré. */
+		.banner01__cta-face--ghost {
+			display: none;
+		}
+
+		.banner01__cta-face {
+			transition: none !important;
+		}
+
+		.banner01__cta:hover .banner01__cta-face,
+		.banner01__cta:focus-visible .banner01__cta-face {
+			transform: none;
+		}
+	}
+
+	.banner01__title {
+		max-width: 22ch;
+		margin: 0;
+		font-family: var(--brand-font-display);
+		font-size: var(--text-2xl);
+		font-weight: var(--weight-display);
+		line-height: var(--leading-heading);
+		letter-spacing: var(--tracking-heading);
+		text-wrap: balance;
+		color: var(--color-text);
+	}
+
+	.banner01__subtitle {
+		max-width: var(--measure);
+		margin: var(--space-4) 0 0;
+		font-size: var(--text-md);
+		line-height: var(--leading-snug);
+		color: var(--color-text-muted);
+	}
+
+	.banner01 :focus-visible {
+		outline: var(--focus-width) solid var(--color-focus);
+		outline-offset: var(--focus-offset);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.banner01__crumb-link::after {
+			transition-duration: 0.01ms !important;
+		}
+	}
+</style>

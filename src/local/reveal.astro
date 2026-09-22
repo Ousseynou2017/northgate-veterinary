@@ -1,0 +1,274 @@
+---
+/**
+ * reveal.astro — toutes les animations d'apparition de la page, en un seul
+ * fichier importé une fois dans <body>. Il ne prend aucune prop : il lit le
+ * DOM final au chargement et décide lui-même quoi révéler.
+ *
+ * Pourquoi un seul fichier et pas une classe posée bloc par bloc : la page
+ * est composée de blocs de la bibliothèque partagée (hors de ce dépôt) plus
+ * quelques blocs locaux, et personne ici n'a le droit de rouvrir ces
+ * fichiers pour leur ajouter un data-attribute. Le ciblage se fait donc par
+ * SUFFIXE de classe (`[class*="__titre"]` etc.), qui survit à peu près
+ * n'importe quel bloc tant que la convention BEM (`bloc01__partie`) tient.
+ *
+ * Pourquoi deux marqueurs (classe racine + attribut par cible) plutôt qu'un
+ * `opacity:0` direct dans le CSS de base : si ce script ne tourne pas — JS
+ * coupé, erreur, navigateur exotique — la page doit rester ENTIÈREMENT
+ * visible. Aucune règle CSS de ce fichier ne cache quoi que ce soit sans
+ * que `.js-reveal` (sur <html>) ET `[data-reveal]` (sur la cible) existent
+ * tous les deux, et les deux ne sont posés que par le script ci-dessous.
+ */
+---
+
+<style is:global>
+	/* Rien n'est caché ici sans les deux marqueurs posés par le script
+	   (classe .js-reveal sur <html> + attribut data-reveal sur la cible).
+	   Pas de marqueur → pas de règle qui matche → page visible par défaut. */
+	:root.js-reveal [data-reveal] {
+		opacity: 0;
+		transform: translateY(24px);
+		transition:
+			opacity 0.6s cubic-bezier(0.22, 0.61, 0.36, 1),
+			transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+		transition-delay: var(--reveal-delay, 0ms);
+	}
+
+	:root.js-reveal [data-reveal].is-revealed {
+		opacity: 1;
+		transform: none;
+	}
+
+	/* Mots du titre du hero : même logique, montée plus courte (12px) et
+	   décalage plus serré (60ms) — un mot n'est pas un bloc de section.
+	   inline-block, jamais de largeur ni de marge posée : le retour à la
+	   ligne reste calculé exactement comme sur le texte brut, seule la
+	   transform bouge (aucun impact sur la boîte, donc CLS 0). */
+	:root.js-reveal [data-reveal-word] {
+		display: inline-block;
+		opacity: 0;
+		transform: translateY(12px);
+		transition:
+			opacity 0.6s cubic-bezier(0.22, 0.61, 0.36, 1),
+			transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+		transition-delay: var(--reveal-delay, 0ms);
+	}
+
+	:root.js-reveal [data-reveal-word].is-revealed {
+		opacity: 1;
+		transform: none;
+	}
+
+	/* Règle non négociable : sous prefers-reduced-motion, tout est visible
+	   immédiatement et rien ne bouge, même si le script a déjà posé les
+	   marqueurs avant que ce media query soit évalué (changement de
+	   préférence en cours de session, par ex.). Le script lui-même sort
+	   avant de rien cacher quand ce media query matche déjà au chargement :
+	   cette règle est le filet, pas le seul rempart. */
+	@media (prefers-reduced-motion: reduce) {
+		[data-reveal],
+		[data-reveal-word] {
+			opacity: 1 !important;
+			transform: none !important;
+			transition: none !important;
+		}
+	}
+</style>
+
+<script>
+	// Sortie immédiate, sans rien poser : sous prefers-reduced-motion, on ne
+	// doit même pas ajouter .js-reveal — sinon un changement de préférence
+	// en cours de session pourrait laisser une cible entre deux états avant
+	// que le média query CSS ne rattrape le coup.
+	const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+	if (reduceMotion) {
+		// rien à faire : sans .js-reveal, aucune règle CSS de ce fichier ne
+		// s'applique, la page est déjà entièrement visible.
+	} else {
+		initReveal();
+	}
+
+	function initReveal() {
+		// Garde-fou : si ce script s'exécutait deux fois (rechargement partiel,
+		// erreur d'outillage), on ne repose pas les marqueurs par-dessus des
+		// cibles déjà révélées.
+		if (document.documentElement.dataset.revealReady === "true") return;
+		document.documentElement.dataset.revealReady = "true";
+		document.documentElement.classList.add("js-reveal");
+
+		const EXCLUDED_ANCESTORS =
+			'[data-nav01], [data-hero01], .kwd01, .glr01, [data-rvc01]';
+
+		/* ---------------------------------------------------- 1 · chargement */
+		// Navbar + hero (hors titre) : fondu au chargement, pas au défilement.
+		const nav = document.querySelector("[data-nav01]");
+		const heroEyebrow = document.querySelector(".hero01__eyebrow");
+		const heroSubtitle = document.querySelector(".hero01__subtitle");
+		const heroActions = document.querySelector(".hero01__actions");
+		const loadTargets = [nav, heroEyebrow, heroSubtitle, heroActions].filter(
+			(el) => el !== null
+		);
+		loadTargets.forEach((el) => el.setAttribute("data-reveal", "load"));
+		applyStagger(loadTargets);
+
+		// Titre du hero : découpe mot par mot. Si le h1 contient autre chose
+		// que du texte (une balise interne), on ne le casse pas — on l'anime
+		// d'un bloc, comme le reste du groupe de chargement.
+		const heroTitle = document.querySelector(".hero01__title");
+		if (heroTitle) {
+			const hasOnlyText = Array.from(heroTitle.childNodes).every(
+				(node) => node.nodeType === Node.TEXT_NODE
+			);
+			if (hasOnlyText) {
+				splitIntoWords(heroTitle);
+			} else {
+				heroTitle.setAttribute("data-reveal", "load");
+				loadTargets.push(heroTitle);
+			}
+		}
+
+		// Le groupe de chargement n'a pas besoin d'IntersectionObserver : on le
+		// révèle après un double rAF, le temps que le navigateur ait bien
+		// posé l'état caché avant de lui laisser voir l'état visible (sinon
+		// le navigateur fusionne les deux et la transition ne se joue pas).
+		requestAnimationFrame(() => {
+			requestAnimationFrame(() => {
+				document
+					.querySelectorAll('[data-reveal="load"], [data-reveal-word]')
+					.forEach((el) => el.classList.add("is-revealed"));
+			});
+		});
+
+		/* ------------------------------------------------------ 2 · défilement */
+		// Sélection par SUFFIXE de classe : robuste aux blocs que le lead
+		// ajoute encore. Plusieurs de ces suffixes ne matchent rien du tout
+		// sur ce DOM aujourd'hui (ex. __card, __step) — ils sont gardés pour
+		// les prochains blocs sans qu'il faille revenir modifier ce fichier.
+		const INCLUDE_SELECTOR = [
+			'[class*="__eyebrow"]',
+			'[class*="__title"]',
+			'[class*="__subtitle"]',
+			'[class*="__p"]',
+			'[class*="__text"]',
+			'[class*="__media"]',
+			'[class*="__img"]',
+			'[class*="__card"]',
+			'[class*="__item"]',
+			'[class*="__cell"]',
+			'[class*="__step"]',
+			'[class*="__btn"]',
+			'[class*="__quote"]',
+			'[class*="__aside"]',
+			'[class*="__video"]',
+			"figure",
+			"img",
+		].join(", ");
+
+		let candidates = Array.from(document.querySelectorAll(INCLUDE_SELECTOR));
+
+		// Exclusions explicites : navbar, hero (déjà traité ci-dessus), ruban
+		// de mots-clés, ruban de galerie, carrousel d'avis — leurs pistes
+		// défilent déjà, les animer casse la boucle.
+		candidates = candidates.filter((el) => !el.closest(EXCLUDED_ANCESTORS));
+
+		// N'anime que le plus haut de chaque chaîne : si un parent ET son
+		// enfant matchent tous les deux (ex. "…__item" qui contient un
+		// "…__text"), l'enfant serait révélé deux fois — une fois avec son
+		// parent, une fois pour lui-même. On ne garde que l'ancêtre.
+		const targets = candidates.filter(
+			(el) => !candidates.some((other) => other !== el && other.contains(el))
+		);
+
+		targets.forEach((el) => el.setAttribute("data-reveal", "scroll"));
+		applyStagger(targets);
+
+		revealOnScroll(targets);
+	}
+
+	/**
+	 * Découpe le texte d'un élément en mots, chacun dans son propre span.
+	 * Les espaces restent des nœuds texte NUS entre les spans (jamais
+	 * absorbés dans un span, jamais remplacés par &nbsp;) : c'est ce qui
+	 * garde le retour à la ligne identique à celui du texte brut, puisque
+	 * le navigateur continue de couper aux mêmes endroits.
+	 */
+	function splitIntoWords(el) {
+		const text = el.textContent ?? "";
+		el.textContent = "";
+		const parts = text.split(/(\s+)/); // capture les espaces pour les garder
+		const words = parts.filter((part) => part.trim() !== "");
+		let wordIndex = 0;
+		parts.forEach((part) => {
+			if (part.trim() === "") {
+				if (part !== "") el.appendChild(document.createTextNode(part));
+				return;
+			}
+			const span = document.createElement("span");
+			span.setAttribute("data-reveal-word", "");
+			span.style.setProperty("--reveal-delay", `${wordIndex * 60}ms`);
+			span.textContent = part;
+			el.appendChild(span);
+			wordIndex += 1;
+		});
+		void words; // longueur déjà consommée via wordIndex, gardé pour lisibilité
+	}
+
+	/**
+	 * Décalage entre éléments FRÈRES d'un même parent, jamais entre éléments
+	 * pris globalement — sinon une grille tout en bas de page hérite du
+	 * retard cumulé de tout ce qu'il y avait avant elle sur la page.
+	 * Plafonné à 6 : au-delà, tout le monde garde 480ms (6 × 80ms), sinon
+	 * une grande grille traîne en longueur.
+	 */
+	function applyStagger(elements) {
+		const groups = new Map();
+		elements.forEach((el) => {
+			const parent = el.parentElement;
+			if (!groups.has(parent)) groups.set(parent, []);
+			groups.get(parent).push(el);
+		});
+		groups.forEach((siblings) => {
+			siblings.forEach((el, index) => {
+				const step = Math.min(index, 6);
+				el.style.setProperty("--reveal-delay", `${step * 80}ms`);
+			});
+		});
+	}
+
+	/**
+	 * IntersectionObserver pour le défilement, avec double filet : si l'API
+	 * n'existe pas, ou si 3 secondes se sont écoulées sans que tout ait été
+	 * vu (ancre cassée, élément jamais dans le viewport, observer qui
+	 * plante), tout ce qui reste caché est révélé de force. Une animation
+	 * qui échoue ne doit jamais rendre du contenu définitivement invisible.
+	 */
+	function revealOnScroll(targets) {
+		const reveal = (el) => el.classList.add("is-revealed");
+
+		if (!("IntersectionObserver" in window)) {
+			targets.forEach(reveal);
+			return;
+		}
+
+		const observer = new IntersectionObserver(
+			(entries, obs) => {
+				entries.forEach((entry) => {
+					if (!entry.isIntersecting) return;
+					reveal(entry.target);
+					obs.unobserve(entry.target);
+				});
+			},
+			{ rootMargin: "0px 0px -10% 0px", threshold: 0.05 }
+		);
+
+		targets.forEach((el) => observer.observe(el));
+
+		setTimeout(() => {
+			targets.forEach((el) => {
+				if (!el.classList.contains("is-revealed")) {
+					reveal(el);
+					observer.unobserve(el);
+				}
+			});
+		}, 3000);
+	}
+</script>

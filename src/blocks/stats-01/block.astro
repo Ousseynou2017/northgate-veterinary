@@ -1,0 +1,256 @@
+---
+/**
+ * stats-01 — 3 ou 4 chiffres clés alignés
+ *
+ * ATTENTION : ce bloc affiche des affirmations factuelles. Chaque chiffre doit
+ * venir du client, par écrit. Les valeurs par défaut sont des PLACEHOLDER
+ * volontairement inutilisables en production.
+ *
+ * Pas de compteur animé : ça oblige à du JS, ça casse au scroll rapide, et un
+ * chiffre qui défile se lit moins bien qu'un chiffre posé.
+ */
+
+export interface Stat {
+	/** Le nombre seul. Ex : "18". */
+	value: string;
+	/** Suffixe collé au nombre. Ex : "ans", "+", "%". */
+	suffix?: string;
+	label: string;
+}
+
+export interface Props {
+	eyebrow?: string;
+	title?: string;
+	stats?: Stat[];
+	/** `alt` fond clair teinté · `dark` bandeau sombre · `default` fond de page. */
+	tone?: "default" | "alt" | "dark";
+	headingLevel?: "h2" | "h3";
+}
+
+const {
+	eyebrow,
+	title,
+	stats = [
+		{ value: "PLACEHOLDER", label: "FIGURE TO BE PROVIDED BY THE CLIENT" },
+		{ value: "PLACEHOLDER", label: "FIGURE TO BE PROVIDED BY THE CLIENT" },
+		{ value: "PLACEHOLDER", label: "FIGURE TO BE PROVIDED BY THE CLIENT" },
+	],
+	tone = "alt",
+	headingLevel = "h2",
+} = Astro.props;
+
+const Heading = headingLevel;
+const isDark = tone === "dark";
+---
+
+<section class={`stat01 stat01--${tone} ${isDark ? "on-dark" : ""}`}>
+	<div class="stat01__inner">
+		{
+			(eyebrow || title) && (
+				<header class="stat01__head">
+					{eyebrow && (
+						<p class="stat01__eyebrow">
+							<span class="stat01__rule" aria-hidden="true" />
+							{eyebrow}
+						</p>
+					)}
+					{title && <Heading class="stat01__title">{title}</Heading>}
+				</header>
+			)
+		}
+
+		<dl class="stat01__grid" style={`--stat-cols:${stats.length}`}>
+			{
+				stats.map((s) => (
+					<div class="stat01__item">
+						<dt class="stat01__value">
+							<span class="stat01__num">{s.value}</span>
+							{s.suffix && <span class="stat01__suffix">{s.suffix}</span>}
+						</dt>
+						<dd class="stat01__label">{s.label}</dd>
+					</div>
+				))
+			}
+		</dl>
+	</div>
+</section>
+
+<style>
+	.stat01,
+	.stat01 *,
+	.stat01 *::before,
+	.stat01 *::after {
+		box-sizing: border-box;
+	}
+
+	.stat01 {
+		font-family: var(--brand-font-body);
+		background: var(--color-bg);
+		color: var(--color-text);
+		padding-block: var(--space-section);
+	}
+
+	.stat01--alt {
+		background: var(--color-bg-alt);
+	}
+
+	.stat01--dark {
+		background: var(--brand-ink);
+	}
+
+	.stat01__inner {
+		max-width: var(--container);
+		margin-inline: auto;
+		padding-inline: var(--gutter);
+	}
+
+	.stat01__head {
+		max-width: var(--measure);
+		margin-bottom: var(--space-12);
+	}
+
+	.stat01__eyebrow {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		margin: 0 0 var(--space-5);
+		font-size: var(--text-2xs);
+		font-weight: var(--weight-semibold);
+		letter-spacing: var(--tracking-eyebrow);
+		text-transform: uppercase;
+		color: var(--color-text-subtle);
+	}
+
+	.stat01__rule {
+		display: block;
+		width: var(--space-8);
+		height: 2px;
+		background: var(--color-accent);
+		border-radius: var(--radius-pill);
+	}
+
+	.stat01__title {
+		margin: 0;
+		font-family: var(--brand-font-display);
+		font-size: var(--text-2xl);
+		font-weight: var(--weight-display);
+		line-height: var(--leading-heading);
+		letter-spacing: var(--tracking-heading);
+		text-wrap: balance;
+	}
+
+	/* ------------------------------------------------------------------ grille */
+
+	.stat01__grid {
+		display: grid;
+		grid-template-columns: repeat(var(--stat-cols, 3), minmax(0, 1fr));
+		gap: var(--space-8);
+		margin: 0;
+	}
+
+	/* Le filet vertical entre les chiffres tient l'alignement du regard.
+	   Il n'existe pas sur la première colonne, ni quand la grille s'empile. */
+	.stat01__item {
+		/* Sans min-width: 0, un élément de grille ne descend pas sous la
+		   largeur de son contenu, et un mot long pousse la page. */
+		min-width: 0;
+		padding-left: var(--space-8);
+		border-left: 1px solid var(--color-border);
+		text-align: center;
+	}
+
+	.stat01__item:first-child {
+		padding-left: 0;
+		border-left: 0;
+	}
+
+	.stat01__value {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: center;
+		gap: 0.08em;
+		margin: 0;
+		font-family: var(--brand-font-display);
+		font-size: var(--text-2xl);
+		font-weight: var(--weight-display);
+		line-height: 1;
+		letter-spacing: var(--tracking-display);
+		/* Chiffres à chasse fixe : trois nombres alignés ne dansent pas. */
+		font-variant-numeric: tabular-nums;
+		color: var(--color-text);
+	}
+
+	/* Le nombre est enveloppé pour pouvoir se casser : une valeur longue
+	   ("PLACEHOLDER", "1 250 chantiers") déborderait sinon la colonne. */
+	.stat01__num {
+		min-width: 0;
+		overflow-wrap: anywhere;
+	}
+
+	.stat01__suffix {
+		font-size: 0.5em;
+		font-weight: var(--weight-semibold);
+		letter-spacing: var(--tracking-normal);
+		color: var(--color-accent);
+	}
+
+
+	/* Aucun élément interactif par défaut, mais un client peut poser un lien
+	   dans le contenu : la règle doit exister avant, pas après. */
+	.stat01 :focus-visible {
+		outline: var(--focus-width) solid var(--color-focus);
+		outline-offset: var(--focus-offset);
+	}
+
+	.stat01__label {
+		max-width: 24ch;
+		margin: var(--space-3) auto 0;
+		font-size: var(--text-sm);
+		line-height: var(--leading-snug);
+		color: var(--color-text-muted);
+	}
+
+	@media (max-width: 61.999rem) {
+		.stat01__grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: var(--space-8) var(--space-6);
+		}
+
+		/* En deux colonnes, le filet ne doit apparaître que sur la colonne de
+		   droite : sinon la première de chaque rangée hérite d'un trait orphelin. */
+		.stat01__item {
+			padding-left: var(--space-6);
+		}
+
+		.stat01__item:nth-child(odd) {
+			padding-left: 0;
+			border-left: 0;
+		}
+	}
+
+	@media (max-width: 39.999rem) {
+		.stat01__grid {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 0;
+		}
+
+		/* Empilé : le filet passe à l'horizontale. */
+		.stat01__item,
+		.stat01__item:nth-child(odd) {
+			padding-left: 0;
+			padding-block: var(--space-6);
+			border-left: 0;
+			border-top: 1px solid var(--color-border);
+		}
+
+		.stat01__item:first-child {
+			padding-top: 0;
+			border-top: 0;
+		}
+
+		.stat01__label {
+			max-width: none;
+		}
+	}
+</style>

@@ -1,0 +1,1048 @@
+---
+import "../styles/_tokens.css";
+
+import Navbar01 from "../blocks/navbar-01/block.astro";
+import Hero01 from "../blocks/hero-01/block.astro";
+import Keywords01 from "../blocks/keywords-01/block.astro";
+import Stats01 from "../blocks/stats-01/block.astro";
+import Services01 from "../blocks/services-01/block.astro";
+import About01 from "../blocks/about-01/block.astro";
+import Process01 from "../blocks/process-01/block.astro";
+import Faq01 from "../blocks/faq-01/block.astro";
+import Contact01 from "../blocks/contact-01/block.astro";
+import Footer01 from "../blocks/footer-01/block.astro";
+
+// Bloc LOCAL au projet (composition relevée sur la référence, cf. LAYOUT.md §2
+// section 8). Il ne vient pas de la bibliothèque et n'y retournera pas.
+import ServicesGridCta01 from "../local/services-grid-cta-01/block.astro";
+import AboutSplit01 from "../local/about-split-01/block.astro";
+import GalleryRibbon01 from "../local/gallery-ribbon-01/block.astro";
+import ReviewsCarousel01 from "../local/reviews-carousel-01/block.astro";
+import NoticePill01 from "../local/notice-pill-01/block.astro";
+
+// Les animations d'apparition. Un seul composant, posé une fois : il pose
+// lui-même l'état caché PAR LE SCRIPT et ne cache rien si le JS ne tourne pas.
+import Reveal from "../local/reveal.astro";
+
+// ---------------------------------------------------------------------------
+// IMAGES — photographies sous licence Pexels, licence lue sur la page source de
+// chaque fichier. Source, auteur, licence et date de vérification : une ligne
+// par fichier dans reference/IMAGES.md.
+//
+// Les fichiers servis sont en WebP, recadrés au rapport de forme du §2 de
+// LAYOUT.md et produits à 1,5× la taille de mise en page (le hero à 1×, il est
+// déjà en 1920). Les `width`/`height` déclarés ci-dessous restent les
+// dimensions de MISE EN PAGE : ce sont elles qui réservent la place et tiennent
+// le CLS à 0.
+//
+// Les trois cadres carrés des sections (services, appel à l'action, FAQ) sont
+// des PHOTOS depuis le 20/09 au soir, plus des illustrations au trait : une
+// par thème de section — soins, urgences, questions.
+//
+// La colonne du milieu du « à propos » porte une VIDÉO muette en boucle, sous
+// la même licence Pexels. Son garde-fou est dans le bloc : preload="none",
+// lecture à l'entrée dans la fenêtre, arrêtée en mouvement réduit.
+//
+// Aucun être vivant généré : les 19 photographies et la vidéo sont des prises
+// de vue réelles.
+// ---------------------------------------------------------------------------
+const IMG = "/img";
+
+// ---------------------------------------------------------------------------
+// COORDONNÉES — 22/09. Ce ne sont pas de vraies coordonnées et ce ne sont pas
+// non plus des coordonnées inventées au hasard : chaque valeur vient d'une
+// plage RÉSERVÉE à la fiction, pour qu'aucun appel ni aucun courriel ne parte
+// chez un tiers si quelqu'un clique.
+//   · `555-01xx` est la plage nord-américaine réservée aux œuvres de fiction ;
+//   · `.example.com` est réservé par la RFC 2606, il ne sera jamais attribué ;
+//   · l'adresse est celle d'un cabinet qui n'existe pas.
+// Elles remplacent les « PLACEHOLDER » : un bandeau de marqueurs sous un pied
+// de page se lit comme un site inachevé, là où une coordonnée réservée se lit
+// comme une maquette assumée. Le `noindex` et les deux mentions « concept
+// piece » restent ce qui dit que le cabinet n'existe pas.
+// ---------------------------------------------------------------------------
+const SITE = "https://northgate.example.com/";
+const TEL = "(555) 010-0142";
+const TEL_HREF = "tel:+15550100142";
+const MAIL = "hello@northgate.example.com";
+const ADRESSE = "1420 Alder Street, Portland, OR";
+const HORAIRES = "Mon–Fri 8:00–18:00 · Sat 9:00–13:00 · Sun closed";
+const galerieAlts = [
+	"A puppy held in gloved hands during a check-up",
+	"A cat looking out through the door of its carrier",
+	"A puppy being washed during a grooming visit",
+	"Sterilised instruments laid out on a tray",
+	"A vet listening to a cat's chest with a stethoscope",
+	"A rabbit, photographed close up",
+	"A cat asleep on a soft blanket",
+	"An owner holding her dog in the consulting room",
+];
+const galerie = Array.from({ length: 8 }, (_, i) => ({
+	label: galerieAlts[i],
+	text: `PHOTO ${i + 1}`,
+	src: `${IMG}/galerie-${i + 1}.webp`,
+	alt: galerieAlts[i],
+}));
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Northgate Veterinary — a calm place for your animal to be cared for</title>
+
+		<!-- SEO — 22/09. Description, canonical et Open Graph posés pour que le
+		     lien se présente correctement quand il est partagé.
+
+		     LE `noindex` RESTE, et ce n'est pas un oubli : ce site est une
+		     MAQUETTE. Le cabinet n'existe pas, les six avis et les quatre
+		     chiffres sont écrits pour la démonstration, et les coordonnées sont
+		     des valeurs réservées. Indexer ça, c'est présenter une clinique
+		     vétérinaire imaginaire à quelqu'un qui cherche un vétérinaire.
+		     Il ne se retire qu'avec le reste : vraies coordonnées, vrais avis.
+
+		     PAS de JSON-LD LocalBusiness pour la même raison : ce balisage sert
+		     à déclarer un établissement réel, avec son adresse et ses horaires.
+		     En poser un ici reviendrait à affirmer que le cabinet existe. -->
+		<meta name="robots" content="noindex, nofollow" />
+		<meta
+			name="description"
+			content="Northgate Veterinary is a concept piece: a small-practice veterinary site with unhurried consultations, grooming, dentistry, surgery and a vet on call around the clock."
+		/>
+		<link rel="canonical" href={SITE} />
+
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="Northgate Veterinary" />
+		<meta property="og:title" content="Northgate Veterinary — a calm place where your animal is known" />
+		<meta
+			property="og:description"
+			content="Concept piece. A small veterinary practice: unhurried visits, the same vet every time, and a price agreed before anything starts."
+		/>
+		<meta property="og:url" content={SITE} />
+		<!-- URL ABSOLUE obligatoire : les aperçus de partage ne résolvent pas un
+		     chemin relatif. Dimensions déclarées pour éviter le recadrage. -->
+		<meta property="og:image" content={`${SITE}img/hero.webp`} />
+		<meta property="og:image:width" content="1920" />
+		<meta property="og:image:height" content="1200" />
+		<meta property="og:image:alt" content="A brown and white dog resting, looking straight at the camera" />
+		<meta name="twitter:card" content="summary_large_image" />
+
+		<!-- Préchargement de la police de TITRE uniquement. Obligatoire (§3 du
+		     plan) : sans lui, CLS 0,309 / Performance 74 ; avec, CLS 0 / 96.
+		     Ne jamais précharger aussi la police de texte : ça annule le gain. -->
+		<link rel="preload" href="/fonts/newsreader-latin.woff2" as="font" type="font/woff2" crossorigin />
+	</head>
+	<body>
+		<!-- 0 · LE BANDEAU « CONCEPT PIECE » A QUITTÉ LE HAUT DE PAGE — 20/09.
+		     Il tuait l'accueil : la première chose lue était un avertissement.
+		     Il ne disparaît pas, il DESCEND, et il est maintenant posé aux deux
+		     seuls endroits où il a un travail à faire :
+		       1. le sur-titre de la section des avis — les six avis sont écrits
+		          pour la maquette ;
+		       2. la ligne légale du pied de page — elle couvre aussi les quatre
+		          faits chiffrés de stat01.
+		     Ces deux lignes ne se retirent pas : sans elles, la page présente
+		     des témoignages et des chiffres inventés comme s'ils étaient vrais. -->
+
+		<!-- 1 · Navigation -->
+		<Navbar01
+			tone="accent"
+			{/* LE LOGO CHOISI PAR OUSSEYNOU : celui d'en bas à droite de la
+			    planche `logo-site-veterinaire.png` — la patte à la croix.
+			    Il est découpé et rendu transparent par
+			    scripts/fabrique-logo.mjs : sur la planche il est posé sur un
+			    vert plus foncé que l'en-tête, servi tel quel on verrait un
+			    rectangle. 640 × 151 natif, servi à 187 × 44. */}
+			logoSrc={`${IMG}/logo.png`}
+			logoAlt="Northgate Veterinary"
+			logoWidth={187}
+			logoHeight={44}
+			logoHref="/"
+			navLabel="Main navigation"
+			skipLabel="Skip to main content"
+			menuOpenLabel="Open menu"
+			menuCloseLabel="Close menu"
+			links={[
+				{ label: "About", href: "#about" },
+				{ label: "Services", href: "#services" },
+				{ label: "How it works", href: "#how-it-works" },
+				{ label: "Reviews", href: "#reviews" },
+				{ label: "FAQ", href: "#faq" },
+			]}
+			cta={{ label: "Book a visit", href: "#book" }}
+		/>
+
+		<main id="main-content">
+			<!-- 2 · Hero -->
+			<Hero01
+				eyebrow="Northgate Veterinary Practice"
+				title="A calm place where your animal is known"
+				subtitle="Unhurried care from a team your animal gets to know, day and night."
+				cta={{ label: "Book a visit", href: "#book" }}
+				ctaSecondary={{ label: "Our services", href: "#services" }}
+				imgSrc={`${IMG}/hero.webp`}
+				imgAlt="A brown and white dog resting, looking straight at the camera"
+				imgWidth={1920}
+				imgHeight={1200}
+			/>
+
+			<!-- 3 · Ruban de mots-clés -->
+			<!-- FOND VERT — FORMAT.md §2. La référence le pose sur blanc ; c'est
+			     l'un des trois endroits où on différencie par la couleur, décision
+			     d'Ousseynou. Mots en blanc (7,65:1 sur ce vert), étoiles en vert
+			     d'eau pastel (4,50:1). --color-accent-loud y tombe à 2,88 : il est
+			     calibré pour l'encre, pas pour l'accent plein. -->
+			<Keywords01
+				title="What we treat"
+				tone="accent"
+				speed={36}
+				separator="✲"
+				keywords={[
+					{ label: "Wellness" },
+					{ label: "Grooming" },
+					{ label: "Vaccination" },
+					{ label: "Dentistry" },
+					{ label: "Surgery" },
+					{ label: "Emergencies" },
+				]}
+			/>
+
+			<!-- 4 · Intro — LAYOUT.md §2 section 3 : texte à gauche, IMAGE À DROITE,
+			     rapport 496/450. C'est la première image après le hero, et le
+			     premier temps de l'alternance gauche/droite. Réutilise about-01,
+			     aucun bloc neuf : la composition est la même, seul le côté change.
+			     Cadre VIDE à cette étape — aucune photo n'est posée. -->
+			<div class="lyt-media-110">
+				<About01
+					eyebrow="Introduction"
+					title="A practice built around the animal"
+					paragraphs={["We keep the practice small so every visit has the time it actually needs."]}
+					bullets={[]}
+					cta={{ label: "Book a visit", href: "#book" }}
+					imgSide="right"
+					imgSrc={`${IMG}/intro.webp`}
+					imgAlt="A vet checking a cat's ear on the consulting table"
+					imgWidth={496}
+					imgHeight={450}
+				/>
+			</div>
+
+			<!-- 5 · Faits de fonctionnement — aucun chiffre de performance inventé,
+			     seulement des faits vrais par construction (registre stats-01
+			     l'interdit sans chiffres vérifiables ; ce sont des faits, pas des
+			     performances). -->
+			<Stats01
+				tone="alt"
+				stats={[
+					{ value: "7 days", label: "Open every day of the week" },
+					{ value: "24/7", label: "A vet on call for emergencies" },
+					{ value: "Same week", label: "Most appointments, booked online" },
+					{ value: "1 vet", label: "The same one follows your animal" },
+				]}
+			/>
+
+			<!-- 6 · Pourquoi nous choisir — LAYOUT.md §2 section 5 : IMAGE À GAUCHE,
+			     trois arguments à droite. C'est le premier renversement de
+			     l'alternance : la section 4 avait son image à droite.
+			     about-01 à nouveau, côté inversé par la prop imgSide. -->
+			<div class="lyt-media-110">
+				<About01
+					eyebrow="Why us"
+					title="Why owners keep coming back to Northgate"
+					paragraphs={[]}
+					bullets={[
+						"Appointments booked long, never stacked",
+						"The same vet, every single visit",
+						"A price agreed before anything starts",
+					]}
+					cta={{ label: "Book a visit", href: "#book" }}
+					imgSide="left"
+					tone="alt"
+					imgSrc={`${IMG}/pourquoi-nous.webp`}
+					imgAlt="A golden retriever looking at the camera, head tilted"
+					imgWidth={496}
+					imgHeight={450}
+				/>
+			</div>
+
+			<!-- 7 · Services — services-01 n'a pas de champ image (icône seulement,
+			     voir rapport final : conflit avec §5 du plan qui prévoit une photo
+			     par prestation). -->
+			<div id="services">
+				<!-- Grille 3 × 2 NUE — FORMAT.md §6 : ni carte, ni fond, ni carte
+				     peinte à l'accent. Icône en haut, titre court, description
+				     dessous, le tout centré. Icônes du jeu ANIMAL, pas du jeu BTP. -->
+				<Services01
+					eyebrow="What we do"
+					title="Everything your animal needs, under one roof"
+					columns={3}
+					variant="bare"
+					featuredIndex={0}
+					services={[
+						{ title: "Health checks", text: "Yearly examinations and the vaccines your animal actually needs, nothing more.", icon: "coeur" },
+						{ title: "Grooming", text: "Bath, clipping, nails and ears, booked as its own unhurried visit.", icon: "tonte" },
+						{ title: "Dental care", text: "Scaling and polishing, catching problems while they are still small.", icon: "dent" },
+						{ title: "Surgery", text: "Planned procedures with monitoring until your animal is ready to leave.", icon: "patte" },
+						{ title: "Nutrition", text: "A diet built around your animal's age, weight and daily condition.", icon: "bol" },
+						{ title: "Emergencies", text: "A vet on call day and night, equipped to act immediately.", icon: "cloche" },
+					]}
+				/>
+			</div>
+
+			<!-- 8 · À propos — LAYOUT.md §2 section 7 : DEUX cadres 365 × 355,
+			     rayon 24, un à chaque bord du contenu, texte centré entre les
+			     deux, sur fond crème. about-01 ne sait poser qu'une image d'un
+			     seul côté : c'est une recomposition, donc un bloc LOCAL.
+			     Le placeholder d'image qui était ici est retiré : à cette étape
+			     on pose des cadres vides, pas des images. -->
+			<div id="about">
+				<AboutSplit01
+					eyebrow="About the practice"
+					title="We look after your animal like our own"
+					paragraphs={["A small practice by choice, and it stays that way."]}
+					bullets={[]}
+					cta={null}
+					tone="alt"
+					frameWidth={365}
+					frameHeight={355}
+					frameRadius={24}
+					videoSrc={`${IMG}/a-propos-video.mp4`}
+					videoPoster={`${IMG}/a-propos-video-poster.webp`}
+					videoWidth={365}
+					videoHeight={465}
+					videoLabel="A calm dog resting indoors — silent looping clip"
+					leftSrc={`${IMG}/a-propos-gauche.webp`}
+					leftAlt="A rabbit held carefully in two hands"
+					rightSrc={`${IMG}/a-propos-droite.webp`}
+					rightAlt="An owner sitting with her dog on her lap"
+				/>
+			</div>
+
+			<!-- 9 · Services + appel à l'action — UNE SEULE SECTION depuis le
+			     21/09. Le projet en avait deux : services-detail-01, puis
+			     cta-01 juste en dessous. Relevé à 1440 sur la référence :
+			     c'est une grille de 3 × 2 cases de 370 × 360, gouttière 20,
+			     dont la SIXIÈME EST la carte « Réservez votre rendez-vous ».
+			     Les cinq premières sont les prestations : pastille ronde
+			     d'accent avec l'icône, titre, description.
+			     D'où services-grid-cta-01, local au projet.
+			     La carte est orange sur la référence ; ici elle est VERTE, et
+			     son bouton reste ambre — l'action principale doit se détacher
+			     de l'aplat, sinon plus rien ne se distingue. -->
+			<ServicesGridCta01
+				eyebrow="Services"
+				title="What actually happens during each visit"
+				entries={[
+					{ icon: "tonte", title: "Grooming & boarding", text: "Bath, clipping, nails and ears, booked on its own. Boarding keeps the same routine." },
+					{ icon: "coeur", title: "Consultations & prevention", text: "A full examination, the vaccines your animal needs, and a plan for the year ahead." },
+					{ icon: "dent", title: "Dental care", text: "Scaling and polishing under anaesthetic, every tooth checked while problems are still small." },
+					{ icon: "patte", title: "Surgery & hospitalisation", text: "Planned procedures with monitoring until your animal wakes. You are called the moment they do." },
+					{ icon: "cloche", title: "Emergencies 24/7", text: "A vet on call day and night, equipped to act rather than send you elsewhere." },
+				]}
+				cta={{
+					title: "Book your visit today",
+					text: "Plan a visit with our team and keep your animal in good shape.",
+					label: "Book a visit",
+					href: "#book",
+					/* PNG DÉTOURÉ, fond transparent : sur la référence le chien est
+					   posé debout sur le bord bas de l'encart, il n'est pas dans
+					   un cadre. Une photo rectangulaire à cet endroit fait un
+					   autocollant — c'est ce qu'il y avait avant. */
+					imgSrc: `${IMG}/cta-chien.png`,
+					imgAlt: "",
+					imgWidth: 400,
+					imgHeight: 773,
+				}}
+			/>
+
+			<!-- 11 · Comment ça marche -->
+			<div id="how-it-works">
+				<Process01
+					eyebrow="How it works"
+					title="Three steps, and your animal is booked in"
+					tone="alt"
+					media={{ width: 570, height: 398, radius: 38, label: "", text: "", src: `${IMG}/comment-ca-marche.webp`, alt: "A smiling owner laughing beside her husky on a bright sofa" }}
+					steps={[
+						{ number: "01", title: "Book the slot", text: "Pick a time that fits your week, online or by phone." },
+						{ number: "02", title: "Come and visit", text: "A full examination, explained as we go, with time for questions." },
+						{ number: "03", title: "Leave with clarity", text: "You know what comes next, and exactly what it will cost." },
+					]}
+				/>
+			</div>
+
+			<!-- 12 · Avis — LAYOUT.md §2 section 11 : CARROUSEL, 3 cartes de 371
+			     visibles, gouttière 19, six avis au total. Bloc LOCAL : la grille
+			     de testimonials-01 reste en bibliothèque, elle sert encore pour
+			     la citation de clôture.
+			     Avis inventés, autorisés uniquement parce que le bandeau
+			     "concept piece" en tête de page rend la nature fictive explicite.
+			     Photos remplacées par des initiales. -->
+			<ReviewsCarousel01
+				id="reviews"
+				eyebrow="Illustrative reviews — concept piece"
+				title="What owners say after their first visit"
+				cardWidth={371}
+				gap={19}
+				prevLabel="Previous reviews"
+				nextLabel="Next reviews"
+				regionLabel="Reviews — scrollable with the arrow keys"
+				reviews={[
+					{ quote: "They never rush. My cat is anxious at the vet and they take the time she needs, every single visit.", name: "Sarah M.", role: "Cat owner", rating: 5 },
+					{ quote: "Called at eleven at night about my dog. Someone picked up, and we were seen within the hour.", name: "James O.", role: "Dog owner", rating: 5 },
+					{ quote: "The cost was explained before anything started. No surprise on the invoice, which is rare.", name: "Priya K.", role: "Two dogs", rating: 5 },
+					{ quote: "Same vet every time. She knows my rabbit's whole history without ever opening the file.", name: "Tom B.", role: "Rabbit owner", rating: 5 },
+					{ quote: "They called the next morning to ask how she had slept. Nobody had ever done that for us.", name: "Hélène D.", role: "Senior dog", rating: 5 },
+					{ quote: "We came in for a second opinion and left with a plan we understood. No pressure, no upsell.", name: "Marcus L.", role: "Cat owner", rating: 5 },
+				]}
+			/>
+
+			<!-- 13 · Galerie — LAYOUT.md §2 section 12 : RUBAN DÉFILANT, pas une
+			     grille. 8 vignettes uniques de 325 × 350, rayon 32, série doublée
+			     pour boucler (16 au rendu), première vignette à x=10 donc hors
+			     gouttière, découpe par overflow-x: clip comme keywords-01.
+			     Bloc LOCAL : gallery-01 (grille + visionneuse) reste en
+			     bibliothèque, ce n'est pas le même objet.
+			     Cadres VIDES : aucune photo à cette étape. -->
+			<GalleryRibbon01
+				id="gallery"
+				eyebrow="Gallery"
+				title="A few moments from an ordinary week"
+				thumbWidth={325}
+				thumbHeight={350}
+				radius={32}
+				speed={60}
+				startOffset={10}
+				regionLabel="Gallery — scrollable with the arrow keys"
+				items={galerie}
+			/>
+
+			<!-- 14 · FAQ -->
+			<Faq01
+				id="faq"
+				eyebrow="FAQ"
+				title="The questions owners ask us before their first visit"
+				openFirst={true}
+				{/* PAS de bouton ici : la référence n'en a qu'UN à cet endroit,
+				    et c'est celui posé DANS la pastille orange juste en
+				    dessous. Deux boutons à 150 px l'un de l'autre, c'est deux
+				    fois la même action. */}
+				cta={null}
+				media={null}
+				items={[
+					{ question: "How often should my animal see a vet?", answer: "Once a year for a healthy adult. Puppies, kittens and older animals need more frequent visits, and we will tell you when." },
+					{ question: "Do you handle emergencies at night?", answer: "Yes. A vet is on call around the clock. Call the practice number and you will reach someone, not a machine." },
+					{ question: "Can I book online?", answer: "Yes, through the form on this page. We confirm your slot within the same working day." },
+					{ question: "Which vaccines does my animal need?", answer: "It depends on age, species, and contact with other animals. We go through it at the first visit." },
+					{ question: "How do I know if my animal needs dental care?", answer: "Bad breath, difficulty eating, or visible tartar. We check the teeth at every routine examination." },
+					{ question: "Do you offer grooming as a separate visit?", answer: "Yes. Grooming is booked on its own, with its own slot, never squeezed between consultations." },
+				]}
+				schema={false}
+			/>
+
+			<!-- 15 · Bandeau urgences — REFAIT le 21/09 (FORMAT.md §14).
+			     C'était une section sombre pleine largeur, avec titre, paragraphe,
+			     bouton et photo de chat. La référence n'a rien de tout ça : une
+			     pastille de 650 × 85, rayon 20, centrée, UNE phrase, pas d'image.
+			     banner-01 ne sait pas faire cet objet — d'où notice-pill-01, local. -->
+			<NoticePill01
+				text="A vet is on call around the clock, every single day of the year."
+				cta={{ label: "Book a visit for us", href: "#book" }}
+				width={650}
+				height={85}
+				radius={20}
+				tone="accent"
+			/>
+
+			<!-- 16 · Formulaire — champs "service souhaité" et "date souhaitée"
+			     ajoutés en C3 (select + input date natifs, sur la copie projet du
+			     bloc). Pas de destination configurée : le formulaire n'envoie
+			     nulle part. -->
+			<Contact01
+				id="book"
+				media={{ width: 530, height: 625, radius: 30, label: "", text: "", src: `${IMG}/contact.webp`, alt: "A golden retriever looking at the camera, head tilted" }}
+				tone="ink"
+				fieldVariant="bare"
+				intro=""
+				eyebrow="Contact"
+				title="Book a visit"
+				quote="Incredible care, and a service that treats you like a person. We moved across the city and still come back."
+				quoteAuthor="Amina R. — two cats and a rabbit"
+				action=""
+				submitLabel="Send my request"
+				nameLabel="Full name"
+				phoneLabel="Phone"
+				emailLabel="Email"
+				messageLabel="Your request"
+				serviceLabel="Preferred service"
+				serviceEmptyOption="Select a service"
+				serviceOptions={[
+					"Health checks & vaccination",
+					"Grooming",
+					"Dental care",
+					"Surgery & hospitalisation",
+					"Nutrition advice",
+					"Emergencies",
+				]}
+				dateLabel="Preferred date"
+				showDateField={true}
+				timeLabel="Preferred time"
+				showTimeField={true}
+				honeypotLabel="Do not fill in this field"
+				requiredNoteText="Fields marked with an {asterisk} are required."
+				requiredNoteSrWord="asterisk"
+{/* AUCUNE liste de coordonnées ici : la référence n'en a pas dans
+				    cette section, elles vivent dans le pied de page. Quatre lignes
+				    « PLACEHOLDER » sous un formulaire, c'est la première chose que
+				    l'œil attrape. */}
+				infos={[]}
+				consentLabel="I agree that my details may be used to get back to me about this request."
+				messages={{
+					valueMissing: "This field is required.",
+					checkboxRequired: "You need to check this box to send the form.",
+					typeMismatch: "Check the email address format.",
+					tooShort: "This answer is too short.",
+					invalid: "Invalid field.",
+					formError: "The form has errors. Fix the fields marked below.",
+					/* PAS de Formspree — décision du 21/09, c'est un site de
+					   démonstration. Le bloc empêche déjà l'envoi quand `action`
+					   est vide ; on ne change que ce qui est dit à l'écran, pour
+					   que ce soit une phrase lisible par un visiteur et pas un
+					   message d'implémentation. */
+					formValidNoAction: "Demo site — this form is not connected.",
+					sending: "Sending…",
+				}}
+			/>
+
+			<!-- 16 · LA CITATION AUTONOME A ÉTÉ SUPPRIMÉE le 21/09 (FORMAT.md §16).
+			     Elle faisait double emploi avec celle qui est maintenant posée EN
+			     SURIMPRESSION sur la photo du contact : la référence n'en a qu'une,
+			     et c'est celle-là. testimonials-01 reste en bibliothèque, intact. -->
+
+		</main>
+
+		<!-- 18 · Pied de page — trois colonnes (marque, navigation, contact),
+		     pas quatre (registre footer-01 : un footer à 4 colonnes sur une page
+		     unique fait vide). Réseaux et liens légaux vidés : aucun compte
+		     social ni page légale fournis, ne pas inventer de lien. -->
+		<Footer01
+			tone="light"
+			brandName="Northgate Veterinary"
+			brandText={HORAIRES}
+			columns={[
+				{
+					title: "Services",
+					links: [
+						{ label: "Grooming", href: "#services" },
+						{ label: "Vaccination", href: "#services" },
+						{ label: "Dental care", href: "#services" },
+						{ label: "Emergencies", href: "#services" },
+					],
+				},
+				{
+					title: "Navigation",
+					links: [
+						{ label: "About", href: "#about" },
+						{ label: "Services", href: "#services" },
+						{ label: "How it works", href: "#how-it-works" },
+						{ label: "Reviews", href: "#reviews" },
+						{ label: "FAQ", href: "#faq" },
+					],
+				},
+			]}
+			contact={[
+				{ label: "Phone", value: TEL, href: TEL_HREF },
+				{ label: "Email", value: MAIL, href: `mailto:${MAIL}` },
+				{ label: "Address", value: ADRESSE },
+			]}
+			socials={[]}
+			legalLinks={[]}
+			legalNavLabel="Legal links"
+			{/* Balisée, pas en texte brut : la référence met une partie de sa
+			    ligne légale dans sa couleur d'accent, centrée sous les
+			    colonnes. Ici c'est le vert de marque. */}
+			legalHtml={`© 2026 <b>Northgate Veterinary</b>. All rights reserved. <span class="ftr01__accent">Concept piece</span> — the reviews and figures are written for this mock-up.`}
+		/>
+
+		<Reveal />
+
+		<style is:global>
+			html {
+				scroll-behavior: smooth;
+			}
+
+			@media (prefers-reduced-motion: reduce) {
+				html {
+					scroll-behavior: auto;
+				}
+
+				/* FILET GLOBAL — posé le 21/09 en même temps que les animations
+				   d'apparition. Mesuré avant : 73 éléments gardaient une
+				   transition ou une animation active sous mouvement réduit —
+				   survols de la navbar, accordéon de la FAQ, rubans. Chaque bloc
+				   a sa propre règle de mouvement réduit, mais aucune ne les
+				   couvrait tous. Ici on tranche pour la page entière : rien ne
+				   bouge, et ce qui était en cours se termine tout de suite.
+				   `!important` assumé : c'est un filet, il doit gagner contre
+				   les styles scopés des blocs, qui pèsent (0,2,0). */
+				*,
+				*::before,
+				*::after {
+					transition-duration: 0.001ms !important;
+					transition-delay: 0ms !important;
+					animation-duration: 0.001ms !important;
+					animation-delay: 0ms !important;
+					animation-iteration-count: 1 !important;
+					scroll-behavior: auto !important;
+				}
+			}
+
+			body {
+				margin: 0;
+				background: var(--color-bg);
+				color: var(--color-text);
+				font-family: var(--brand-font-body);
+			}
+
+			/* ------------------------------------------------------------------
+			   COMPOSITIONS LOCALES À CE PROJET — LAYOUT.md
+			   Ces règles portent la géométrie relevée sur la référence. Elles
+			   vivent ICI, jamais dans les blocs ni dans la bibliothèque : un
+			   futur site client ne doit pas hériter de la mise en page du
+			   cabinet de la référence.
+			   Sélecteurs à trois niveaux volontairement : les styles scopés des
+			   blocs pèsent (0,2,0), il en faut (0,3,0) pour gagner sans dépendre
+			   de l'ordre d'injection ni d'un !important.
+			   ------------------------------------------------------------------ */
+
+			/* LARGEUR DE CONTENU — LAYOUT.md, correctif J.
+			   La référence cale son contenu de x=137 à x=1288 sur une fenêtre de
+			   1425, soit 1151 px utiles. Le projet en avait 1120 (conteneur de
+			   1200 moins deux gouttières de 40), et ses cadres sortaient à 567 au
+			   lieu de 496.
+			   1151 + 2 × 40 = 1231 px = 76.9375rem.
+			   --container est REDÉFINI ICI, sur body, pas modifié dans
+			   _tokens.css : la valeur de la bibliothèque reste 75rem, seul ce
+			   projet est calé sur sa référence. */
+			body {
+				--container: 76.9375rem;
+				/* La couleur des points de séparation. Encre à 70 % : noire à
+				   l'œil sans écraser le texte qu'elle borde. */
+				--sep-dot: color-mix(in oklab, var(--brand-ink) 70%, transparent);
+			}
+
+			/* Intro et « pourquoi nous » — §2 sections 3 et 5.
+			   Colonnes mesurées : texte 551, image 496, gouttière 104.
+			   551 + 104 + 496 = 1151, la largeur utile exacte. En fr, le rapport
+			   tient à toutes les largeurs au lieu de casser sous 1231. */
+			.lyt-media-110 .abt01__inner {
+				column-gap: 104px;
+			}
+
+			/* L'ordre des PISTES suit le DOM, pas le rendu : about-01 place son
+			   média en premier et le déplace avec `order`. Les deux côtés n'ont
+			   donc pas la même déclaration. */
+			.lyt-media-110 .abt01--img-right .abt01__inner {
+				grid-template-columns: minmax(0, 551fr) minmax(0, 496fr);
+			}
+
+			.lyt-media-110 .abt01--img-left .abt01__inner {
+				grid-template-columns: minmax(0, 496fr) minmax(0, 551fr);
+			}
+
+			/* Cadre 496 × 450 du §2, soit 1,10, et rayon 32 mesuré.
+			   about-01 impose 5/6 en grand écran, 16/10 en petit, et --radius-lg
+			   (36) : trois valeurs qui ne sont pas celles de la référence. */
+			.lyt-media-110 .abt01__media .abt01__img {
+				aspect-ratio: 496 / 450;
+				border-radius: 32px;
+			}
+
+			/* Sous 62rem about-01 empile ses deux colonnes : la gouttière de 104
+			   deviendrait un trou horizontal inutile. */
+			@media (max-width: 61.999rem) {
+				.lyt-media-110 .abt01__inner {
+					grid-template-columns: minmax(0, 1fr);
+					column-gap: 0;
+				}
+			}
+
+			/* Contact — §2 section 15. Cette section est la seule plus LARGE que
+			   le reste : la référence la cale de x=112 à x=1312 sur une fenêtre
+			   de 1425, soit 1200 de contenu contre 1151 partout ailleurs.
+			   626 (formulaire) + 44 (gouttière) + 530 (image) = 1200. */
+			#book .ctc01__inner--media {
+				max-width: calc(1200px + 2 * var(--gutter));
+			}
+
+			/* Citation de clôture : un seul avis, donc une seule colonne —
+			   sinon la carte occupe la moitié de la grille et laisse un trou. */
+			.lyt-quote .tst01 .tst01__grid {
+				grid-template-columns: minmax(0, 1fr);
+				max-width: var(--measure-heading);
+				margin-inline: auto;
+			}
+
+			/* L'en-tête du bloc est vide ici : sans ça, sa marge basse laisse un
+			   blanc au-dessus de la citation. */
+			.lyt-quote .tst01 .tst01__head {
+				margin-bottom: 0;
+			}
+
+			/* ------------------------------------------------------------------
+			   LA NAVBAR — géométrie relevée sur la référence (LAYOUT.md §2,
+			   relevé 3 du 20/09 au soir) : hauteur 103 px, liens à 16 px,
+			   24 px entre deux libellés.
+			   Les 24 px sont l'écart TEXTE À TEXTE, pas la gouttière CSS : le
+			   lien porte 12 px de padding de chaque côté, donc 12 + 12 = 24 et
+			   la gouttière de la liste tombe à 0. Mettre 24 px de gap en plus
+			   du padding donnerait 48 px — c'est l'erreur que fait n'importe
+			   quel relevé lu trop vite.
+			   La hauteur, elle, est dans --header-height (_tokens.css) parce
+			   que scroll-margin-top en dépend : deux endroits, une valeur. */
+			/* ------------------------------------------------------------------
+			   LES BOUTONS « Book a visit » DE SECTION SONT VERTS, pas ambre.
+			   FORMAT.md, tableau des couleurs : l'ambre est la couleur de
+			   l'ACTION PRINCIPALE — en-tête, hero, appel à l'action, envoi du
+			   formulaire. Un bouton répété au milieu de chaque section claire
+			   est secondaire : s'il est ambre lui aussi, plus rien ne se
+			   distingue. Vert plein, texte blanc : 7,65:1.
+			   La bordure d'action est retirée avec : elle n'a de travail à
+			   faire que sous un aplat clair.
+			   TROIS NIVEAUX de sélecteur, et pas deux : Astro scope les règles
+			   d'un bloc en `.abt01__btn[data-astro-cid-…]`, soit (0,2,0).
+			   `body .abt01__btn` ne fait que (0,1,1) et PERD — mesuré, le bouton
+			   restait ambre. `body .abt01 .abt01__btn` fait (0,2,1). */
+			body .abt01 .abt01__btn {
+				color: var(--color-on-accent);
+				background: var(--color-accent);
+				border-color: transparent;
+			}
+
+			body .abt01 .abt01__btn:hover {
+				background: var(--color-accent-hover);
+			}
+
+			/* La liste à coches tient sur UNE colonne — FORMAT.md §5. Sur deux,
+			   trois items impairs laissent un trou, et la référence n'en a
+			   qu'une. */
+			body .abt01 .abt01__list {
+				grid-template-columns: minmax(0, 1fr);
+			}
+
+			body .nav01 .nav01__list {
+				gap: 0;
+			}
+
+			/* ------------------------------------------------------------------
+			   LA TAILLE DU LOGO. La règle vit ici et pas dans le bloc : la
+			   hauteur d'un logo dépend du logo, pas du composant. `width: auto`
+			   laisse le rapport 640/151 faire la largeur — les attributs
+			   width/height du <img> restent posés côté HTML, ce sont eux qui
+			   réservent la place et tiennent le CLS à 0. */
+			/* `img[src]` et pas `img` : Astro scope la règle du bloc en
+			   `.nav01__logo img[data-astro-cid-…]`, soit (0,2,2) — EXACTEMENT le
+			   poids de `body .nav01 .nav01__logo img`. À égalité c'est l'ordre
+			   des feuilles qui tranche, et celle du bloc passe après : mesuré,
+			   le logo sortait à 640 × 151 et l'en-tête à 152 px de haut.
+			   L'attribut ajoute un cran et fait (0,3,2). */
+			body .nav01 .nav01__logo img[src] {
+				width: auto;
+				height: 44px;
+			}
+
+			@media (max-width: 47.999rem) {
+				body .nav01 .nav01__logo img[src] {
+					height: 34px;
+				}
+			}
+
+			/* ------------------------------------------------------------------
+			   LES LIENS DE L'EN-TÊTE SONT AU MILIEU — relevé sur la référence à
+			   1440 : logo à x=208, liens de 589 à 913, bouton à 1111. Le centre
+			   des liens tombe à 751 pour un milieu d'espace libre à 728 : ils
+			   sont centrés dans ce qui reste entre le logo et le bouton, pas
+			   collés au bouton comme le faisait `space-between` à trois enfants.
+			   `margin-inline: auto` sur la LISTE, dans un `<nav>` qui prend toute
+			   la place disponible : c'est exactement ce centrage-là.
+			   Desktop seulement — sous 62rem le `<nav>` devient le panneau
+			   latéral et tout ça n'a plus de sens. */
+			@media (min-width: 62rem) {
+				body .nav01 .nav01__nav {
+					flex: 1 1 auto;
+				}
+
+				body .nav01 .nav01__list {
+					margin-inline: auto;
+				}
+			}
+
+			/* ------------------------------------------------------------------
+			   LE BOUTON SECONDAIRE DU HERO EST PLEIN, PAS FANTÔME.
+			   Il était transparent au repos et ne se peignait qu'au survol : un
+			   bouton qu'on ne voit qu'une fois la souris dessus n'est pas un
+			   bouton. On prend la couleur du SURVOL comme couleur de repos.
+			   Le hero porte `on-dark` : --color-bg-sunken y est un vert très
+			   foncé, et le texte reste clair. Il ne devient pas ambre : l'ambre
+			   est réservée à l'action principale, qui est juste à côté. */
+			body .hero01 .hero01__btn--ghost {
+				color: var(--color-text);
+				background: var(--color-bg-sunken);
+				border-color: var(--color-text);
+			}
+
+			body .hero01 .hero01__btn--ghost:hover {
+				background: var(--color-bg-alt);
+				border-color: var(--color-text);
+			}
+
+			/* ------------------------------------------------------------------
+			   LE MARQUEUR DE SUR-TITRE EST UN POINT, PAS UN TRAIT.
+			   La référence pose un disque de 7 px devant chaque sur-titre. Huit
+			   blocs sur dix le font déjà (.ctc01__eyebrow-dot) ; le hero et le
+			   contact, eux, posaient un trait de 2 × 32. Même objet, même
+			   forme. */
+			body .hero01 .hero01__rule,
+			body .ctc01 .ctc01__rule {
+				width: var(--space-2);
+				height: var(--space-2);
+				border-radius: var(--radius-pill);
+			}
+
+			/* ------------------------------------------------------------------
+			   LA FAQ N'A PLUS D'IMAGE — sa colonne unique se centre, sinon elle
+			   s'étale sur les 1151 px utiles et les questions se lisent mal.
+			   650 px, c'est la largeur de l'accordéon sur la référence, et
+			   exactement celle de la pastille d'urgence juste en dessous. */
+			body .faq01 .faq01__cols {
+				max-width: 650px;
+				margin-inline: auto;
+			}
+
+			/* La pastille d'urgence est COLLÉE sous la dernière question sur la
+			   référence : ~35 px, pas deux demi-sections empilées. Les deux
+			   blocs gardent leur padding par défaut ailleurs ; ici on ferme
+			   l'écart des deux côtés. */
+			body .faq01.faq01--default {
+				padding-bottom: var(--space-6);
+			}
+
+			body .ntc01.ntc01--accent {
+				padding-top: 0;
+			}
+
+			/* ------------------------------------------------------------------
+			   LES SÉPARATEURS SONT DES POINTS, PLUS DES TRAITS FINS.
+			   Les six questions de la FAQ étaient séparées par un filet de 1 px
+			   gris clair, qui ne se voit pas et ne dit rien. Une ligne de points
+			   foncés se lit comme une couture. UNIQUEMENT la FAQ : la référence
+			   ne sépare pas les trois étapes du « comment ça marche ».
+			   2 px de diamètre : sous 2 px les points se referment en trait. */
+			body .faq01 .faq01__list {
+				border-top: 2px dotted var(--sep-dot);
+			}
+
+			body .faq01 .faq01__item {
+				border-bottom: 2px dotted var(--sep-dot);
+			}
+
+			/* « Comment ça marche » n'a AUCUN séparateur sur la référence — ni
+			   filet, ni points. Le trait de liaison du bloc est supprimé, pas
+			   redessiné. */
+			body .prc01 .prc01__item::before {
+				display: none;
+			}
+
+			/* ------------------------------------------------------------------
+			   LES ÉTAPES : LE NUMÉRO EST SUR LA LIGNE DU TITRE.
+			   Le bloc empile pastille, titre, description — trois lignes, et
+			   les trois étapes se retrouvent à 210 px l'une de l'autre. La
+			   référence met la pastille À GAUCHE du titre et aligne la
+			   description sur le titre, pas sur la pastille : deux lignes au
+			   lieu de trois, et les étapes se tiennent.
+			   Grille explicite plutôt que `float` ou `flex` : la description
+			   doit se caler sous le TITRE, donc en colonne 2, rangée 2. */
+			body .prc01 .prc01__item {
+				display: grid;
+				grid-template-columns: auto minmax(0, 1fr);
+				align-items: center;
+				column-gap: var(--space-5);
+				padding-top: 0;
+			}
+
+			body .prc01 .prc01__num {
+				grid-column: 1;
+				grid-row: 1;
+				width: 2.75rem;
+				height: 2.75rem;
+				margin: 0;
+				font-size: var(--text-base);
+			}
+
+			body .prc01 .prc01__step-title {
+				grid-column: 2;
+				grid-row: 1;
+				margin: 0;
+			}
+
+			body .prc01 .prc01__text {
+				grid-column: 2;
+				grid-row: 2;
+				margin-top: var(--space-2);
+			}
+
+			/* Resserré d'autant : les étapes ne sont plus trois blocs isolés. */
+			body .prc01 .prc01__cols--media .prc01__list {
+				gap: var(--space-8);
+			}
+
+			/* ------------------------------------------------------------------
+			   LES CARTES D'AVIS PASSENT EN VERT TRÈS CLAIR.
+			   Elles étaient blanches sur un fond crème : la carte ne se voyait
+			   pas. --color-accent-soft, c'est 9 % de vert de marque dans le fond
+			   — assez pour délimiter, pas assez pour teinter le texte. */
+			/* ------------------------------------------------------------------
+			   PIED DE PAGE : les coordonnées et les horaires sont en BLANC.
+			   `--color-text-muted` est calibré pour du texte de complément sur
+			   fond clair ; sur l'encre du pied il passe en gris moyen et les
+			   PIED DE PAGE CLAIR — 22/09. Il était à l'encre ; la référence le
+			   pose sur BLANC, texte noir, avec une pastille d'accent devant
+			   chaque prestation et la ligne légale centrée en bas. Le fond et
+			   le jeu de couleurs viennent de `tone="light"` sur le bloc ; ce
+			   qui suit ne porte que la forme. */
+			/* Titres de colonne : la référence les écrit en CASSE NORMALE et en
+			   grand — « Navigation », « Services », « Contact us » — pas en
+			   petites capitales espacées. C'est ce qui donne au pied son air de
+			   plan de site plutôt que d'ours de journal. */
+			body .ftr01 .ftr01__col-title {
+				margin-bottom: var(--space-6);
+				font-family: var(--brand-font-body);
+				font-size: var(--text-md);
+				font-weight: var(--weight-semibold);
+				letter-spacing: var(--tracking-normal);
+				text-transform: none;
+				color: var(--color-text);
+			}
+
+			body .ftr01 .ftr01__link,
+			body .ftr01 .ftr01__contact-value,
+			body .ftr01 .ftr01__brand-text {
+				font-size: var(--text-base);
+				color: var(--color-text);
+			}
+
+			/* LE POINT VERT devant chaque prestation. Il n'est que dans la
+			   colonne « Services » sur la référence — c'est ce qui la distingue
+			   de la colonne de navigation, qui a les mêmes libellés courts.
+			   Première colonne de la rangée, d'où `:first-of-type` sur le
+			   <nav> : le bloc de contact, lui, est un <div>. */
+			body .ftr01 nav.ftr01__col:first-of-type .ftr01__link-label {
+				display: inline-flex;
+				align-items: center;
+				gap: var(--space-3);
+			}
+
+			body .ftr01 nav.ftr01__col:first-of-type .ftr01__link-label::before {
+				content: "";
+				flex: none;
+				width: var(--space-2);
+				height: var(--space-2);
+				background: var(--color-accent);
+				border-radius: var(--radius-pill);
+			}
+
+			/* Le soulignement au survol de ce bloc se dessine sur ::after et
+			   passerait sous la pastille : on le borne au texte. */
+			body .ftr01 nav.ftr01__col:first-of-type .ftr01__link-label::after {
+				left: calc(var(--space-2) + var(--space-3));
+			}
+
+			/* L'ADRESSE E-MAIL DÉBORDE À 1024. Mesuré par masquage de section :
+			   scrollWidth 1039 pour 1024 de client, et le fautif est le libellé
+			   du lien `mailto:`, 219 px dans une colonne qui n'en fait pas
+			   autant. `.ftr01__contact-value` a déjà `overflow-wrap: anywhere`,
+			   mais dès que la coordonnée devient un LIEN c'est
+			   `.ftr01__link-label` qui porte le texte, et lui ne l'a pas. */
+			body .ftr01 .ftr01__list--contact .ftr01__link-label {
+				overflow-wrap: anywhere;
+			}
+
+			/* La ligne légale est CENTRÉE sous les colonnes, seule sur sa
+			   rangée — aucun lien légal n'est fourni. */
+			body .ftr01 .ftr01__bottom {
+				justify-content: center;
+				text-align: center;
+			}
+
+			body .ftr01 .ftr01__copy {
+				font-size: var(--text-sm);
+				color: var(--color-text-muted);
+			}
+
+			body .ftr01 .ftr01__copy b {
+				font-weight: var(--weight-semibold);
+				color: var(--color-text);
+			}
+
+			body .ftr01 .ftr01__copy .ftr01__accent {
+				color: var(--color-accent);
+			}
+
+			body .rvc01 .rvc01__card {
+				background: var(--color-accent-soft);
+			}
+
+			/* ------------------------------------------------------------------
+			   LE CONTACT N'EST PLUS SOMBRE : FOND DE CIEL.
+			   La section était à l'encre, presque noire. Le dégradé part d'un
+			   bleu de ciel et se fond dans le crème de la page, ce qui raccorde
+			   avec le fond de la photo du chien posée à droite. Le texte reste
+			   à l'encre — c'est le `tone="default"` du bloc qui s'en charge,
+			   rien à réécrire ici. */
+			/* DEUX classes, pas une : le style scopé du bloc pèse
+			   `.ctc01[data-astro-cid-…]`, soit (0,2,0). `body .ctc01` ne fait
+			   que (0,1,1) et PERD — mesuré, la section est restée blanche.
+			   `.ctc01.ctc01--default` fait (0,2,1) et gagne. */
+			/* Le contact est une section PEINTE, au vert de marque — pas au
+			   noir d'encre du bloc, pas au dégradé de ciel essayé avant. C'est
+			   le même vert que l'en-tête et que la pastille d'urgence : la page
+			   se ferme sur la couleur qui l'ouvre.
+			   `tone="ink"` sert uniquement à poser `on-dark` : tout le contenu
+			   bascule dans le jeu inversé d'un coup. Seul le fond est repris.
+			   Blanc sur ce vert : 7,65:1, déjà mesuré sur l'en-tête.
+			   QUATRE crans de classe, et pas trois : la règle du bloc est
+			   `.ctc01.ctc01--ink[data-astro-cid-…]` — l'attribut de scope
+			   compte comme une classe, donc (0,3,0). Mesuré : avec
+			   `body .ctc01.ctc01--ink`, à (0,2,1), la section restait NOIRE.
+			   `.on-dark` est déjà sur la section, il suffit de l'ajouter. */
+			body .ctc01.ctc01--ink.on-dark {
+				background: var(--brand-accent);
+			}
+
+			/* Les jetons de `on-dark` sont calibrés pour l'ENCRE, pas pour le
+			   vert de marque. Mesuré après le changement de fond, pixels
+			   résolus (auto-contrôle noir/blanc = 21) :
+			     filet des champs  rgb(79,85,83)   sur le vert -> 1,00:1
+			     note « champs requis » rgb(145,149,148)        -> 2,52:1
+			     case à cocher « j’accepte »                    -> 4,23:1
+			   Un filet à 1,00:1 est invisible : en champs nus, c'est la SEULE
+			   chose qui dise où est le champ. On repose les deux sur des
+			   valeurs tenues contre ce vert-là. */
+			body .ctc01.ctc01--ink.on-dark .ctc01__input {
+				border-bottom-color: var(--color-accent-pastel);
+			}
+
+			body .ctc01.ctc01--ink.on-dark .ctc01__req,
+			body .ctc01.ctc01--ink.on-dark .ctc01__legal,
+			body .ctc01.ctc01--ink.on-dark .ctc01__consent,
+			body .ctc01.ctc01--ink.on-dark .ctc01__quote-author {
+				color: #dbe8e3;
+			}
+
+
+			body .nav01 .nav01__link {
+				padding-inline: 12px;
+				font-size: 1rem; /* 16 px pleins, pas la clamp de --text-base */
+			}
+		</style>
+	</body>
+</html>

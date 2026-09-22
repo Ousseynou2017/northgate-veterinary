@@ -1,0 +1,369 @@
+---
+/**
+ * cta-01 — bandeau pleine largeur : titre + bouton
+ *
+ * Le bloc de conversion. Il se pose en bas de page, avant le pied de page.
+ * Un seul message, une seule action principale.
+ */
+
+import Frame from "../../local/frame.astro";
+
+export interface Props {
+	eyebrow?: string;
+	title?: string;
+	text?: string;
+	cta?: { label: string; href: string } | null;
+	/** Action secondaire, typiquement le téléphone. */
+	ctaSecondary?: { label: string; href: string } | null;
+	/** `ink` bandeau sombre · `accent` bandeau de marque · `alt` fond clair teinté. */
+	tone?: "ink" | "accent" | "alt";
+	/**
+	 * Emplacement d'image, aux mesures du §2 de LAYOUT.md. Cadre VIDE tant
+	 * qu'aucune photo n'est choisie. `null` = le bloc rend exactement comme avant.
+	 */
+	media?: { width: number; height: number; radius: number; label: string; text: string; src?: string; alt?: string } | null;
+
+	/** `center` (défaut) ou `split` : texte à gauche, boutons à droite. */
+	layout?: "center" | "split";
+	headingLevel?: "h2" | "h3";
+}
+
+const {
+	eyebrow,
+	title = "Got a project in mind?",
+	text = "PLACEHOLDER — a sentence that removes the last hesitation: free quote, response time, area covered.",
+	cta = { label: "Request a quote", href: "/contact/" },
+	ctaSecondary = null,
+	tone = "ink",
+	media = null,
+	layout = "center",
+	headingLevel = "h2",
+} = Astro.props;
+
+const Heading = headingLevel;
+const isDark = tone === "ink" || tone === "accent";
+---
+
+<section class={`cta01 cta01--${tone} cta01--${layout} ${isDark ? "on-dark" : ""}`}>
+	<div class={`cta01__inner${media ? " cta01__inner--media" : ""}`}>
+		<div class="cta01__text">
+			{
+				eyebrow && (
+					<p class="cta01__eyebrow">
+						<span class="cta01__rule" aria-hidden="true" />
+						{eyebrow}
+					</p>
+				)
+			}
+			<Heading class="cta01__title">{title}</Heading>
+			{text && <p class="cta01__p">{text}</p>}
+		</div>
+
+		{
+			(cta || ctaSecondary) && (
+				<div class="cta01__actions">
+					{cta && (
+						<a class="cta01__btn" href={cta.href}>
+							{cta.label}
+						</a>
+					)}
+					{ctaSecondary && (
+						<a class="cta01__btn cta01__btn--ghost" href={ctaSecondary.href}>
+							{ctaSecondary.label}
+						</a>
+					)}
+				</div>
+			)
+		}
+		{
+			media && (
+				<div class="cta01__media">
+					<Frame width={media.width} height={media.height} radius={media.radius} label={media.label} text={media.text} src={media.src} alt={media.alt} />
+				</div>
+			)
+		}
+	</div>
+</section>
+
+<style>
+	.cta01,
+	.cta01 *,
+	.cta01 *::before,
+	.cta01 *::after {
+		box-sizing: border-box;
+	}
+
+	.cta01 {
+		position: relative;
+		overflow: hidden;
+		isolation: isolate;
+		font-family: var(--brand-font-body);
+		padding-block: var(--space-section);
+		color: var(--color-text);
+	}
+
+	.cta01--ink {
+		background: var(--brand-ink);
+	}
+
+	.cta01--alt {
+		background: var(--color-bg-alt);
+	}
+
+	.cta01--accent {
+		background: var(--color-accent);
+		--color-text: var(--color-on-accent);
+		--color-text-muted: color-mix(in oklab, var(--color-on-accent) 82%, transparent);
+		--color-focus: var(--color-on-accent);
+	}
+
+	/* Filigrane : un dégradé radial très doux, calé sur la couleur d'accent.
+	   C'est le seul ornement de la bibliothèque, et il ne sert qu'ici — le
+	   bandeau de conversion doit se détacher du reste de la page. */
+	.cta01--ink::before {
+		content: "";
+		position: absolute;
+		z-index: -1;
+		top: -40%;
+		right: -10%;
+		width: 45rem;
+		height: 45rem;
+		background: radial-gradient(circle, color-mix(in oklab, var(--brand-accent) 30%, transparent) 0%, transparent 62%);
+		pointer-events: none;
+	}
+
+	.cta01__inner {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: var(--space-10);
+		max-width: var(--container);
+		margin-inline: auto;
+		padding-inline: var(--gutter);
+		text-align: center;
+	}
+
+	.cta01--split .cta01__inner {
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-12);
+		text-align: left;
+	}
+
+	/* LAYOUT.md §2 section 9 : illustration 300 × 300 à DROITE du texte.
+	   Le conteneur par défaut est un flex centré ; avec un emplacement d'image
+	   il devient une grille, sinon le texte reste centré sous l'illustration. */
+	.cta01__inner--media {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) 300px;
+		grid-template-areas:
+			"texte media"
+			"actions media";
+		column-gap: var(--space-16);
+		row-gap: var(--space-6);
+		align-items: center;
+		text-align: left;
+	}
+
+	.cta01__inner--media .cta01__text {
+		grid-area: texte;
+	}
+
+	.cta01__inner--media .cta01__actions {
+		grid-area: actions;
+	}
+
+	.cta01__inner--media .cta01__media {
+		grid-area: media;
+		display: flex;
+		justify-content: flex-end;
+	}
+
+	@media (max-width: 61.999rem) {
+		.cta01__inner--media {
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-areas:
+				"media"
+				"texte"
+				"actions";
+			justify-items: start;
+		}
+
+		.cta01__inner--media .cta01__media {
+			justify-content: flex-start;
+		}
+	}
+
+	.cta01__text {
+		max-width: 44rem;
+	}
+
+	.cta01__eyebrow {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-3);
+		margin: 0 0 var(--space-5);
+		font-size: var(--text-2xs);
+		font-weight: var(--weight-semibold);
+		letter-spacing: var(--tracking-eyebrow);
+		text-transform: uppercase;
+		color: var(--color-text-muted);
+	}
+
+	.cta01--split .cta01__eyebrow {
+		justify-content: flex-start;
+	}
+
+	.cta01__rule {
+		display: block;
+		width: var(--space-8);
+		height: 2px;
+		background: currentColor;
+		border-radius: var(--radius-pill);
+		opacity: 0.6;
+	}
+
+	.cta01--ink .cta01__rule,
+	.cta01--alt .cta01__rule {
+		background: var(--color-accent);
+		opacity: 1;
+	}
+
+	.cta01__title {
+		margin: 0;
+		font-family: var(--brand-font-display);
+		font-size: var(--text-2xl);
+		font-weight: var(--weight-display);
+		line-height: var(--leading-heading);
+		letter-spacing: var(--tracking-heading);
+		text-wrap: balance;
+	}
+
+	.cta01__p {
+		margin: var(--space-5) auto 0;
+		max-width: var(--measure);
+		font-size: var(--text-md);
+		line-height: var(--leading-snug);
+		color: var(--color-text-muted);
+	}
+
+	.cta01--split .cta01__p {
+		margin-inline: 0;
+	}
+
+	.cta01__actions {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: var(--space-4);
+		flex-shrink: 0;
+	}
+
+	.cta01__btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-height: var(--tap-target);
+		padding: var(--space-4) var(--space-8);
+		font-size: var(--text-base);
+		font-weight: var(--weight-semibold);
+		line-height: 1;
+		color: var(--color-on-action);
+		text-decoration: none;
+		white-space: nowrap;
+		background: var(--color-action);
+		border: 1px solid transparent;
+		border-radius: var(--radius-sm);
+		transition:
+			background-color var(--dur-fast) var(--ease),
+			color var(--dur-fast) var(--ease),
+			transform var(--dur-fast) var(--ease),
+			box-shadow var(--dur-fast) var(--ease),
+			border-color var(--dur-fast) var(--ease);
+		/* L'aplat ambre ne fait que 2,08:1 contre le creme : c'est cette
+		   bordure qui delimite le bouton sur fond clair (7,03:1). Sur fond
+		   sombre le scope .on-dark la ramene a l'ambre, l'aplat suffit. */
+		border: 1.5px solid var(--color-action-border);
+	
+	}
+
+	.cta01__btn:hover {
+		background: var(--color-action-hover);
+		box-shadow: var(--shadow-md);
+		transform: translateY(-1px);
+	}
+
+	.cta01__btn:active {
+		background: var(--color-action-active);
+		box-shadow: none;
+		transform: translateY(0);
+	}
+
+	/* Sur fond d'accent, un bouton d'accent serait invisible : on inverse. */
+	.cta01--accent .cta01__btn {
+		color: var(--color-accent);
+		background: var(--color-on-accent);
+	}
+
+	.cta01--accent .cta01__btn:hover {
+		color: var(--color-accent);
+		background: color-mix(in oklab, var(--color-on-accent) 88%, var(--brand-ink));
+	}
+
+	.cta01__btn--ghost {
+		color: var(--color-text);
+		background: transparent;
+		border-color: var(--color-border-strong);
+	}
+
+	.cta01__btn--ghost:hover {
+		color: var(--color-text);
+		background: var(--color-bg-sunken);
+		border-color: var(--color-text);
+		box-shadow: none;
+	}
+
+	.cta01--accent .cta01__btn--ghost {
+		color: var(--color-on-accent);
+		background: transparent;
+		border-color: color-mix(in oklab, var(--color-on-accent) 45%, transparent);
+	}
+
+	.cta01--accent .cta01__btn--ghost:hover {
+		color: var(--color-on-accent);
+		background: color-mix(in oklab, var(--color-on-accent) 14%, transparent);
+		border-color: var(--color-on-accent);
+	}
+
+	.cta01 :focus-visible {
+		outline: var(--focus-width) solid var(--color-focus);
+		outline-offset: var(--focus-offset);
+	}
+
+	@media (max-width: 61.999rem) {
+		.cta01--split .cta01__inner {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: var(--space-8);
+		}
+	}
+
+	@media (max-width: 39.999rem) {
+		.cta01__actions {
+			width: 100%;
+			flex-direction: column;
+		}
+
+		.cta01__btn {
+			width: 100%;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.cta01__btn {
+			transition-duration: 0.01ms !important;
+		}
+	}
+</style>

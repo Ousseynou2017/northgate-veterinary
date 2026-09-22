@@ -1,0 +1,219 @@
+---
+/**
+ * gallery-ribbon-01 — la galerie en RUBAN DÉFILANT, pas en grille.
+ *
+ * BLOC LOCAL AU PROJET. Mécanisme relevé sur la référence, §2 section 12 de
+ * LAYOUT.md : 8 vignettes uniques de 325 × 350, rayon 32, la série doublée
+ * pour boucler (16 au rendu), le ruban dépasse la fenêtre et n'est PAS calé
+ * sur la gouttière — la première vignette est à x=10.
+ *
+ * Il remplace gallery-01 sur cette page. gallery-01 reste en bibliothèque :
+ * c'est une grille avec visionneuse, un autre objet.
+ *
+ * ACCESSIBILITÉ — les deux points qui font qu'un ruban n'est pas un défaut :
+ *   1. Le doublon porte aria-hidden et sort de la tabulation : un lecteur
+ *      d'écran annonce 8 vignettes, pas 16.
+ *   2. Le ruban est une zone de défilement focalisable (tabindex=0, role
+ *      group, nom accessible) : au clavier, on le parcourt aux flèches, sans
+ *      souris. L'animation se met en pause au survol ET au focus, sinon le
+ *      contenu fuit sous le curseur de lecture.
+ *
+ * MOUVEMENT RÉDUIT — l'animation est coupée, le doublon retiré du DOM visuel,
+ * et le ruban reste défilable au clavier : on ne perd aucun contenu, on perd
+ * le mouvement.
+ */
+
+import Frame from "../frame.astro";
+
+export interface Item {
+	label: string;
+	text: string;
+	src?: string;
+	alt?: string;
+}
+
+export interface Props {
+	id?: string;
+	eyebrow?: string;
+	title?: string;
+	items?: Item[];
+	thumbWidth?: number;
+	thumbHeight?: number;
+	radius?: number;
+	/** Durée d'une boucle complète, en secondes. */
+	speed?: number;
+	/** Décalage de départ du ruban, en px. Le relevé donne 10. */
+	startOffset?: number;
+	tone?: "default" | "alt";
+	headingLevel?: "h2" | "h3";
+	/** Nom accessible de la zone défilable. */
+	regionLabel?: string;
+}
+
+const {
+	id = "gallery",
+	eyebrow = "Gallery",
+	title = "Gallery",
+	items = [],
+	thumbWidth = 325,
+	thumbHeight = 350,
+	radius = 32,
+	speed = 60,
+	startOffset = 10,
+	tone = "default",
+	headingLevel = "h2",
+	regionLabel = "Gallery — scrollable with the arrow keys",
+} = Astro.props;
+
+const Heading = headingLevel;
+// La série est doublée : la boucle se referme sur elle-même sans saut visible.
+const track = [...items, ...items];
+---
+
+<section class={`glr01 glr01--${tone}`} id={id}>
+	<div class="glr01__inner">
+		<header class="glr01__head">
+			{
+				eyebrow && (
+					<p class="ctc01__eyebrow">
+						<span class="ctc01__eyebrow-dot" aria-hidden="true" />
+						{eyebrow}
+					</p>
+				)
+			}
+			<Heading class="glr01__title">{title}</Heading>
+		</header>
+	</div>
+
+	<div class="glr01__viewport" tabindex="0" role="group" aria-label={regionLabel}>
+		<ul class="glr01__track" style={`--glr-speed:${speed}s; --glr-start:${startOffset}px; --glr-thumb:${thumbWidth}px`}>
+			{
+				track.map((it, i) => {
+					const isClone = i >= items.length;
+					return (
+						<li class="glr01__item" aria-hidden={isClone ? "true" : undefined}>
+							<Frame width={thumbWidth} height={thumbHeight} radius={radius} label={it.label} text={it.text} src={it.src} alt={isClone ? "" : (it.alt ?? "")} loading="eager" />
+						</li>
+					);
+				})
+			}
+		</ul>
+	</div>
+</section>
+
+<style>
+	.glr01,
+	.glr01 *,
+	.glr01 *::before,
+	.glr01 *::after {
+		box-sizing: border-box;
+	}
+
+	.glr01 {
+		font-family: var(--brand-font-body);
+		background: var(--color-bg);
+		color: var(--color-text);
+		padding-block: var(--space-section);
+		/* Le ruban dépasse volontairement la fenêtre : il est découpé ici, comme
+		   dans keywords-01. Sans ça, la page gagne une barre de défilement
+		   horizontale — mesurée à +3000px. */
+		overflow-x: clip;
+	}
+
+	.glr01--alt {
+		background: var(--color-bg-alt);
+	}
+
+	.glr01__inner {
+		max-width: var(--container);
+		margin-inline: auto;
+		padding-inline: var(--gutter);
+	}
+
+	.glr01__head {
+		max-width: var(--measure-heading);
+		margin-inline: auto;
+		margin-bottom: var(--space-12);
+		text-align: center;
+	}
+
+	.glr01__head .ctc01__eyebrow {
+		justify-content: center;
+	}
+
+	.glr01__title {
+		margin: 0;
+		font-family: var(--brand-font-display);
+		font-size: var(--text-2xl);
+		font-weight: var(--weight-display);
+		line-height: var(--leading-heading);
+		letter-spacing: var(--tracking-heading);
+	}
+
+	/* Zone défilable : `auto` et pas `clip`, pour que le clavier puisse la
+	   parcourir. La barre est masquée, le défilement reste. */
+	.glr01__viewport {
+		overflow-x: auto;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.glr01__viewport::-webkit-scrollbar {
+		display: none;
+	}
+
+	.glr01__viewport:focus-visible {
+		outline: var(--focus-width) solid var(--color-focus);
+		outline-offset: calc(var(--focus-offset) * -1);
+	}
+
+	.glr01__track {
+		display: flex;
+		flex-wrap: nowrap;
+		gap: var(--space-6);
+		width: max-content;
+		/* Le ruban n'est PAS calé sur la gouttière : 10px, relevé. */
+		padding-inline-start: var(--glr-start, 10px);
+		margin: 0;
+		list-style: none;
+		animation: glr01-scroll var(--glr-speed, 60s) linear infinite;
+	}
+
+	/* Pause au survol ET au focus : sinon le contenu fuit sous le curseur de
+	   lecture de celui qui navigue au clavier. */
+	/* PAS de pause au survol — relevé FORMAT.md §12 : sur la référence le ruban
+	   ne ralentit pas (60,9 → 59,9 px/s, souris dessus). La pause au FOCUS
+	   reste : sans elle, on ne peut pas viser une vignette au clavier. */
+	.glr01__viewport:focus-within .glr01__track {
+		animation-play-state: paused;
+	}
+
+	/* La largeur est portée par l'ITEM, pas par le cadre : un enfant en
+	   width:100% dans un flex-item dimensionné par son contenu s'effondre sur
+	   la largeur du libellé — mesuré à 92px au lieu de 325. */
+	.glr01__item {
+		flex: 0 0 var(--glr-thumb, 325px);
+		max-width: calc(100vw - 2 * var(--glr-start, 10px));
+	}
+
+	@keyframes glr01-scroll {
+		/* -50% = exactement une des deux passes : la boucle est invisible. */
+		to {
+			transform: translateX(-50%);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		/* Mouvement coupé. Le ruban reste une rangée défilable au clavier : on
+		   perd l'animation, pas le contenu. Le doublon sort, sinon chaque
+		   vignette est présente deux fois pour rien. */
+		.glr01__track {
+			animation: none;
+			transform: none;
+		}
+
+		.glr01__item[aria-hidden="true"] {
+			display: none;
+		}
+	}
+</style>

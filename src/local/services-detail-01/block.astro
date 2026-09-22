@@ -1,0 +1,288 @@
+---
+/**
+ * services-detail-01 — liste de prestations détaillées + cadre d'illustration
+ *
+ * BLOC LOCAL AU PROJET. Il ne va PAS dans blocs-astro/ : c'est une composition
+ * relevée sur la référence du cabinet, section 8 du §2 de LAYOUT.md (5 entrées
+ * détaillées + illustration 300 × 300 à droite). Un bloc de bibliothèque doit
+ * rester générique ; celui-ci ne l'est pas, il reproduit une page précise.
+ *
+ * Il complète services-01, il ne le remplace pas : services-01 tient la grille
+ * de six cartes courtes (section 6), celui-ci tient les cinq prestations
+ * décrites en détail (section 8).
+ *
+ * Aucune image à cette étape : le cadre est vide, aux dimensions du relevé.
+ */
+
+export interface Entry {
+	title: string;
+	text: string;
+}
+
+import Frame from "../frame.astro";
+
+export interface Props {
+	eyebrow?: string;
+	title?: string;
+	intro?: string;
+	/** Bouton sous la liste — FORMAT.md §8 : la référence en a un. */
+	cta?: { label: string; href: string } | null;
+	entries?: Entry[];
+	tone?: "default" | "alt";
+	headingLevel?: "h2" | "h3";
+	/** Libellés du cadre vide, tant qu'aucune illustration n'est fournie. */
+	emptyImgLabel?: string;
+	emptyImgText?: string;
+	/** Illustration 300 × 300. Absente, le cadre reste vide. */
+	imgSrc?: string;
+	imgAlt?: string;
+}
+
+const {
+	eyebrow = "In detail",
+	title = "What each visit actually covers",
+	intro,
+	cta = null,
+	entries = [],
+	tone = "default",
+	headingLevel = "h2",
+	emptyImgLabel = "PLACEHOLDER — illustration to be provided, 300 × 300",
+	emptyImgText = "ILLUSTRATION 300 × 300",
+	imgSrc,
+	imgAlt = "",
+} = Astro.props;
+
+const Heading = headingLevel;
+---
+
+<section class={`svd01 svd01--${tone}`}>
+	<div class="svd01__inner">
+		<header class="svd01__head">
+			{
+				eyebrow && (
+					<p class="ctc01__eyebrow">
+						<span class="ctc01__eyebrow-dot" aria-hidden="true" />
+						{eyebrow}
+					</p>
+				)
+			}
+			<Heading class="svd01__title">{title}</Heading>
+			{intro && <p class="svd01__intro">{intro}</p>}
+			{cta && (
+				<a class="svd01__cta" href={cta.href}>
+					{cta.label}
+				</a>
+			)}
+		</header>
+
+		<div class="svd01__body">
+			<ol class="svd01__list">
+				{
+					entries.map((e, i) => (
+						<li class="svd01__item">
+							<span class="svd01__num" aria-hidden="true">
+								{String(i + 1).padStart(2, "0")}
+							</span>
+							<div class="svd01__content">
+								<h3 class="svd01__item-title">{e.title}</h3>
+								<p class="svd01__text">{e.text}</p>
+							</div>
+						</li>
+					))
+				}
+			</ol>
+
+			<div class="svd01__media">
+				<Frame width={300} height={300} radius={24} label={emptyImgLabel} text={emptyImgText} src={imgSrc} alt={imgAlt} />
+			</div>
+		</div>
+	</div>
+</section>
+
+<style>
+	.svd01,
+	.svd01 *,
+	.svd01 *::before,
+	.svd01 *::after {
+		box-sizing: border-box;
+	}
+
+	.svd01 {
+		font-family: var(--brand-font-body);
+		background: var(--color-bg);
+		color: var(--color-text);
+		padding-block: var(--space-section);
+	}
+
+	.svd01--alt {
+		background: var(--color-bg-alt);
+	}
+
+	.svd01__inner {
+		max-width: var(--container);
+		margin-inline: auto;
+		padding-inline: var(--gutter);
+	}
+
+	.svd01__head {
+		max-width: var(--measure-heading);
+		margin-inline: auto;
+		margin-bottom: var(--space-12);
+		text-align: center;
+	}
+
+	.svd01__head .ctc01__eyebrow {
+		justify-content: center;
+	}
+
+	.svd01__title {
+		margin: 0;
+		font-family: var(--brand-font-display);
+		font-size: var(--text-2xl);
+		font-weight: var(--weight-display);
+		line-height: var(--leading-heading);
+		letter-spacing: var(--tracking-heading);
+		text-wrap: balance;
+	}
+
+	.svd01__intro {
+		margin: var(--space-5) 0 0;
+		font-size: var(--text-md);
+		line-height: var(--leading-snug);
+		color: var(--color-text-muted);
+	}
+
+	/* La liste garde la largeur, l'illustration est une colonne fixe :
+	   minmax(0, 1fr) sinon un texte long refuse de se rétrécir. */
+	.svd01__body {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) 300px;
+		align-items: start;
+		gap: var(--space-16);
+	}
+
+	.svd01__list {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.svd01__item {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		gap: var(--space-6);
+		padding-block: var(--space-6);
+		border-top: 1px solid var(--color-border);
+	}
+
+	.svd01__item:last-child {
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.svd01__num {
+		font-family: var(--brand-font-display);
+		font-size: var(--text-md);
+		font-weight: var(--weight-display);
+		line-height: var(--leading-heading);
+		color: var(--color-accent);
+	}
+
+	.svd01__content {
+		min-width: 0;
+	}
+
+	.svd01__item-title {
+		margin: 0 0 var(--space-2);
+		font-family: var(--brand-font-display);
+		font-size: var(--text-lg);
+		font-weight: var(--weight-display);
+		line-height: var(--leading-heading);
+		letter-spacing: var(--tracking-heading);
+	}
+
+	.svd01__text {
+		margin: 0;
+		max-width: var(--measure);
+		font-size: var(--text-base);
+		line-height: var(--leading-body);
+		color: var(--color-text-muted);
+	}
+
+	/* PAS de `position: sticky` ici — relevé du 20/09 au soir : sur toute la
+	   référence, un seul élément suit le défilement, la navbar. Le panneau
+	   collant était un ajout, pas une copie. Il reste aligné en haut de sa
+	   colonne, et il défile avec elle. */
+	.svd01__media {
+		align-self: start;
+	}
+
+	/* Cadre vide, aux dimensions du relevé : 300 × 300, rapport 1:1.
+	   Même traitement que le cadre vide d'about-01 — pointillé et libellé,
+	   pour qu'on ne le prenne jamais pour une image livrée. */
+	.svd01__illu {
+		display: grid;
+		place-items: center;
+		width: 100%;
+		max-width: 300px;
+		aspect-ratio: 1 / 1;
+		padding: var(--space-4);
+		text-align: center;
+		background: var(--color-bg-sunken);
+		border: 1px dashed var(--color-border-strong);
+		border-radius: var(--radius-md);
+		font-size: var(--text-xs);
+		font-weight: var(--weight-semibold);
+		letter-spacing: var(--tracking-eyebrow);
+		color: var(--color-text-muted);
+	}
+
+	/* Bouton vert, pas ambre : c'est un bouton SECONDAIRE de section claire
+	   (FORMAT.md, tableau des couleurs). L'ambre reste réservé au « Book a
+	   visit » d'action, sinon plus rien ne se distingue. */
+	.svd01__cta {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-height: var(--tap-target);
+		margin-top: var(--space-6);
+		padding: var(--space-3) var(--space-6);
+		font-size: var(--text-base);
+		font-weight: var(--weight-semibold);
+		line-height: 1;
+		text-decoration: none;
+		color: var(--color-on-accent);
+		background: var(--color-accent);
+		border-radius: var(--radius-pill);
+		transition: background-color var(--dur-fast) var(--ease);
+	}
+
+	.svd01__cta:hover {
+		background: var(--color-accent-hover);
+	}
+
+	.svd01 :focus-visible {
+		outline: var(--focus-width) solid var(--color-focus);
+		outline-offset: var(--focus-offset);
+	}
+
+	@media (max-width: 61.999rem) {
+		/* L'illustration passe au-dessus de la liste : une colonne de 300px
+		   coincée à côté d'un texte étroit ne tient plus. */
+		.svd01__body {
+			grid-template-columns: minmax(0, 1fr);
+			gap: var(--space-10);
+		}
+
+		.svd01__media {
+			display: flex;
+			justify-content: center;
+		}
+	}
+
+	@media (max-width: 39.999rem) {
+		.svd01__item {
+			grid-template-columns: minmax(0, 1fr);
+			gap: var(--space-2);
+		}
+	}
+</style>

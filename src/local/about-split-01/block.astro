@@ -1,0 +1,396 @@
+---
+/**
+ * about-split-01 — texte centré en haut, puis une rangée de trois colonnes
+ * dont seules les deux extrêmes portent une image.
+ *
+ * BLOC LOCAL AU PROJET. Composition relevée sur la référence, §2 section 7 de
+ * LAYOUT.md, version CORRIGÉE du 20/09 au soir :
+ *   titre centré en haut          w=620
+ *   paragraphe centré dessous     w=470
+ *   211 px plus bas, trois colonnes de 365, gouttière 28 :
+ *       image · colonne VIDE · image
+ *   3 × 365 + 2 × 28 = 1151, soit la largeur de contenu exacte.
+ *
+ * La première version de ce bloc posait le texte ENTRE les deux images : la
+ * description de départ était fausse, et son arithmétique (365 + 620 + 365 =
+ * 1350 pour 1151 utiles) le disait déjà.
+ *
+ * LA COLONNE DU MILIEU EST UNE VIDÉO — relevé du 20/09 au soir. « Colonne
+ * vide » était faux, deux fois de suite sur cette section. C'est un <video> de
+ * 365 × 465, donc PLUS HAUT que les deux photos (355) : les trois sont alignés
+ * par le HAUT, la vidéo descend plus bas, et c'est voulu.
+ *
+ * Ce que la vidéo respecte, et pourquoi :
+ *   muted + playsinline ....... sans les deux, aucun navigateur mobile ne la
+ *                               laisse démarrer sans geste de l'utilisateur ;
+ *   loop ...................... c'est une boucle de 8 s, pas un film ;
+ *   preload="none" + poster ... les octets de la vidéo ne partent PAS au
+ *                               chargement. Le poster, lui, est une image
+ *                               légère : le LCP ne paie pas la vidéo ;
+ *   pas d'autoplay ............ la lecture démarre à l'ENTRÉE DANS LA FENÊTRE,
+ *                               par IntersectionObserver, et se met en pause à
+ *                               la sortie — on ne décode pas une vidéo qu'on
+ *                               ne regarde pas ;
+ *   prefers-reduced-motion .... la vidéo ne démarre JAMAIS. Le poster reste
+ *                               affiché, figé. On retire le mouvement, pas le
+ *                               contenu.
+ *
+ * Ne remonte pas en bibliothèque : un bloc générique n'a pas à imposer deux
+ * photos et une colonne vide à un client.
+ */
+
+import Frame from "../frame.astro";
+
+export interface Props {
+	eyebrow?: string;
+	title?: string;
+	paragraphs?: string[];
+	bullets?: string[];
+	cta?: { label: string; href: string } | null;
+	tone?: "default" | "alt";
+	headingLevel?: "h2" | "h3";
+	frameWidth?: number;
+	frameHeight?: number;
+	frameRadius?: number;
+	leftLabel?: string;
+	leftText?: string;
+	leftSrc?: string;
+	leftAlt?: string;
+	rightLabel?: string;
+	rightText?: string;
+	rightSrc?: string;
+	rightAlt?: string;
+	/** Vidéo de la colonne du milieu. Absente, la colonne redevient un vide. */
+	videoSrc?: string;
+	/** Image affichée avant lecture, et SEULE chose affichée en mouvement réduit. */
+	videoPoster?: string;
+	videoWidth?: number;
+	videoHeight?: number;
+	/** Nom accessible : une vidéo muette et décorative reste annoncée. */
+	videoLabel?: string;
+}
+
+const {
+	eyebrow,
+	title = "PLACEHOLDER — title",
+	paragraphs = [],
+	bullets = [],
+	cta = null,
+	tone = "alt",
+	headingLevel = "h2",
+	frameWidth = 365,
+	frameHeight = 355,
+	frameRadius = 24,
+	leftLabel = "PLACEHOLDER — photo, to be supplied by the client",
+	leftText = "PHOTO",
+	rightLabel = "PLACEHOLDER — photo, to be supplied by the client",
+	rightText = "PHOTO",
+	leftSrc,
+	leftAlt = "",
+	rightSrc,
+	rightAlt = "",
+	videoSrc,
+	videoPoster,
+	videoWidth = 365,
+	videoHeight = 465,
+	videoLabel = "",
+} = Astro.props;
+
+const Heading = headingLevel;
+---
+
+<section class={`abs01 abs01--${tone}`}>
+	<div class="abs01__inner">
+		<header class="abs01__head">
+			{
+				eyebrow && (
+					<p class="ctc01__eyebrow">
+						<span class="ctc01__eyebrow-dot" aria-hidden="true" />
+						{eyebrow}
+					</p>
+				)
+			}
+			<Heading class="abs01__title">{title}</Heading>
+			{paragraphs.map((p) => <p class="abs01__p">{p}</p>)}
+
+			{
+				bullets.length > 0 && (
+					<ul class="abs01__list">
+						{bullets.map((b) => (
+							<li class="abs01__li">
+								<svg class="abs01__check" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+									<path d="M3 8.5l3.2 3.2L13 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+								</svg>
+								<span>{b}</span>
+							</li>
+						))}
+					</ul>
+				)
+			}
+
+			{cta && <a class="abs01__cta" href={cta.href}>{cta.label}</a>}
+		</header>
+
+		<div class="abs01__row">
+			<div class="abs01__cell">
+				<Frame width={frameWidth} height={frameHeight} radius={frameRadius} label={leftLabel} text={leftText} src={leftSrc} alt={leftAlt} />
+			</div>
+
+			<div class="abs01__cell abs01__cell--video">
+				{
+					videoSrc ? (
+						<video
+							class="abs01__video"
+							width={videoWidth}
+							height={videoHeight}
+							poster={videoPoster}
+							preload="none"
+							muted
+							loop
+							playsinline
+							aria-label={videoLabel}
+							data-abs01-video
+						>
+							<source src={videoSrc} type="video/mp4" />
+						</video>
+					) : null
+				}
+			</div>
+
+			<div class="abs01__cell">
+				<Frame width={frameWidth} height={frameHeight} radius={frameRadius} label={rightLabel} text={rightText} src={rightSrc} alt={rightAlt} />
+			</div>
+		</div>
+	</div>
+</section>
+
+<style>
+	.abs01,
+	.abs01 *,
+	.abs01 *::before,
+	.abs01 *::after {
+		box-sizing: border-box;
+	}
+
+	.abs01 {
+		font-family: var(--brand-font-body);
+		background: var(--color-bg);
+		color: var(--color-text);
+		padding-block: var(--space-section);
+	}
+
+	/* Fond crème : la référence pose cette section sur #FFFCFA. */
+	.abs01--alt {
+		background: var(--color-bg-alt);
+	}
+
+	.abs01__inner {
+		max-width: var(--container);
+		margin-inline: auto;
+		padding-inline: var(--gutter);
+	}
+
+	/* Titre 620, paragraphe 470, les deux centrés : mesures du §2. */
+	.abs01__head {
+		max-width: 620px;
+		margin-inline: auto;
+		text-align: center;
+	}
+
+	.abs01__head .ctc01__eyebrow {
+		justify-content: center;
+	}
+
+	.abs01__title {
+		margin: 0 0 var(--space-5);
+		font-family: var(--brand-font-display);
+		font-size: var(--text-2xl);
+		font-weight: var(--weight-display);
+		line-height: var(--leading-heading);
+		letter-spacing: var(--tracking-heading);
+		text-wrap: balance;
+	}
+
+	.abs01__p {
+		max-width: 470px;
+		margin: 0 auto var(--space-4);
+		font-size: var(--text-base);
+		line-height: var(--leading-body);
+		color: var(--color-text-muted);
+	}
+
+	.abs01__list {
+		display: grid;
+		gap: var(--space-3);
+		max-width: 470px;
+		margin: var(--space-6) auto 0;
+		padding: 0;
+		list-style: none;
+		text-align: left;
+	}
+
+	.abs01__li {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		gap: var(--space-3);
+		font-size: var(--text-base);
+		line-height: var(--leading-snug);
+	}
+
+	.abs01__check {
+		margin-top: 0.15em;
+		color: var(--color-accent);
+	}
+
+	.abs01__cta {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-height: var(--tap-target);
+		margin-top: var(--space-8);
+		padding: var(--space-3) var(--space-6);
+		font-size: var(--text-base);
+		font-weight: var(--weight-semibold);
+		line-height: 1;
+		color: var(--color-on-action);
+		text-decoration: none;
+		background: var(--color-action);
+		border-radius: var(--radius-pill);
+		transition:
+			background-color var(--dur-fast) var(--ease),
+			transform var(--dur-fast) var(--ease);
+		/* L'aplat ambre ne fait que 2,08:1 contre le creme : c'est cette
+		   bordure qui delimite le bouton sur fond clair (7,03:1). Sur fond
+		   sombre le scope .on-dark la ramene a l'ambre, l'aplat suffit. */
+		border: 1.5px solid var(--color-action-border);
+	
+	}
+
+	.abs01__cta:hover {
+		background: var(--color-action-hover);
+		transform: translateY(-1px);
+	}
+
+	/* Trois colonnes de 365, gouttière 28 : 3 × 365 + 2 × 28 = 1151.
+	   En fr, le rapport tient à toutes les largeurs. L'écart de 211px sous le
+	   texte est celui du relevé — RAMENE A 96px le 21/09 : le relevé de 211
+	   valait pour une section qui portait encore une liste a coches et un
+	   bouton sous le paragraphe (FORMAT.md §7 les a supprimes). Sans eux,
+	   211px laissent un trou. */
+	.abs01__row {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 365fr));
+		column-gap: 28px;
+		margin-top: 96px;
+	}
+
+	/* Les trois colonnes sont alignées par le HAUT : la vidéo fait 465 contre
+	   355 aux photos, elle descend plus bas. Le relevé ne donne qu'un seul y
+	   pour la rangée. */
+	.abs01__row {
+		align-items: start;
+	}
+
+	.abs01__cell--video {
+		min-height: 0;
+	}
+
+	.abs01__video {
+		display: block;
+		width: 100%;
+		max-width: 365px;
+		aspect-ratio: 365 / 465;
+		height: auto;
+		object-fit: cover;
+		background: var(--color-bg-sunken);
+		border-radius: 24px;
+	}
+
+	.abs01 :focus-visible {
+		outline: var(--focus-width) solid var(--color-focus);
+		outline-offset: var(--focus-offset);
+	}
+
+	@media (max-width: 61.999rem) {
+		/* Deux colonnes : les images se rapprochent, la colonne vide disparaît
+		   au lieu de laisser un trou d'un tiers de largeur. */
+		.abs01__row {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			column-gap: var(--space-6);
+			margin-top: var(--space-16);
+		}
+
+		/* Sous 992px la rangée passe à deux colonnes : la vidéo passerait en
+		   troisième position, seule sur sa ligne. Elle prend toute la largeur
+		   de la rangée, sous les deux photos. */
+		.abs01__cell--video {
+			grid-column: 1 / -1;
+			display: flex;
+			justify-content: center;
+			margin-top: var(--space-6);
+		}
+	}
+
+	@media (max-width: 39.999rem) {
+		.abs01__row {
+			grid-template-columns: minmax(0, 1fr);
+			row-gap: var(--space-6);
+			justify-items: center;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		/* Rien ne bouge : le script ne lance pas la lecture, et la vidéo n'a
+		   donc que son poster à montrer. La règle est ici pour que ce soit lu
+		   dans la feuille, pas seulement dans le script. */
+		.abs01__video {
+			/* le poster reste, aucune animation n'est attachée à cet élément */
+		}
+
+		.abs01__cta {
+			transition-duration: 0.01ms !important;
+		}
+	}
+</style>
+
+<script>
+	/**
+	 * La vidéo démarre à l'ENTRÉE DANS LA FENÊTRE et se met en pause à la
+	 * sortie. Pas d'autoplay : une vidéo qui tourne en bas de page décode des
+	 * images que personne ne regarde, et fait chauffer un téléphone pour rien.
+	 *
+	 * Mouvement réduit : on ne démarre jamais. Le poster reste à l'écran, et
+	 * `load()` n'est même pas appelé — les octets de la vidéo ne partent pas.
+	 */
+	function initAbs01Video() {
+		const reduit = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+		document.querySelectorAll("[data-abs01-video]").forEach((v) => {
+			if (v.dataset.absReady === "true") return;
+			v.dataset.absReady = "true";
+
+			if (reduit.matches) return;
+
+			const obs = new IntersectionObserver(
+				(entrees) => {
+					for (const e of entrees) {
+						if (e.isIntersecting) {
+							// play() rend une promesse rejetée si le navigateur
+							// refuse : on l'avale, la vidéo reste sur son poster.
+							const p = v.play();
+							if (p && typeof p.catch === "function") p.catch(() => {});
+						} else if (!v.paused) {
+							v.pause();
+						}
+					}
+				},
+				{ threshold: 0.25 }
+			);
+
+			obs.observe(v);
+		});
+	}
+
+	initAbs01Video();
+	document.addEventListener("astro:page-load", initAbs01Video);
+</script>

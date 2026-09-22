@@ -1,0 +1,843 @@
+---
+/**
+ * contact-01 — formulaire + informations de contact
+ *
+ * Formulaire natif : chaque champ a un <label> réel, la validation HTML fait le
+ * premier tri, et le bloc fonctionne sans JavaScript. Le JS n'ajoute que
+ * l'annonce des erreurs et l'état d'envoi.
+ *
+ * ANTI-SPAM : un champ appât (honeypot) invisible et un champ d'horodatage.
+ * Ce sont des garde-fous côté client — LE FILTRAGE RÉEL SE FAIT CÔTÉ SERVEUR
+ * ou chez le prestataire de formulaire. Voir README.
+ */
+
+export interface ContactInfo {
+	label: string;
+	value: string;
+	/** tel: · mailto: · une URL de carte. Absent = texte simple. */
+	href?: string;
+	icon?: "tel" | "mail" | "pin" | "clock";
+}
+
+import Frame from "../../local/frame.astro";
+
+export interface Props {
+	eyebrow?: string;
+	title?: string;
+	intro?: string;
+	/** URL de traitement. Vide = le formulaire n'envoie nulle part (démo). */
+	action?: string;
+	method?: "POST" | "GET";
+	submitLabel?: string;
+	infos?: ContactInfo[];
+	/** Texte de la case de consentement RGPD. */
+	consentLabel?: string;
+	tone?: "default" | "alt" | "ink";
+	/**
+	 * Emplacement d'image, aux mesures du §2 de LAYOUT.md. Cadre VIDE tant
+	 * qu'aucune photo n'est choisie. `null` = le bloc rend comme avant.
+	 */
+	media?: { width: number; height: number; radius: number; label: string; text: string; src?: string; alt?: string } | null;
+	headingLevel?: "h2" | "h3";
+	id?: string;
+	/** Libellés des champs fixes du formulaire. */
+	nameLabel?: string;
+	phoneLabel?: string;
+	emailLabel?: string;
+	messageLabel?: string;
+	/** Champ "service souhaité" — liste vide = champ non affiché. */
+	serviceLabel?: string;
+	serviceOptions?: string[];
+	serviceEmptyOption?: string;
+	/** Champ "date souhaitée" — false = champ non affiché. */
+	dateLabel?: string;
+	showDateField?: boolean;
+	/** Champ heure, à côté de la date. La référence en a un. */
+	showTimeField?: boolean;
+	timeLabel?: string;
+	/**
+	 * Champs NUS : fond transparent, un seul filet sous le champ, pas de
+	 * boîte. C'est la forme de la référence (FORMAT.md §15) — un formulaire
+	 * qui se lit comme du texte, pas comme un panneau d'administration.
+	 */
+	fieldVariant?: "boxed" | "bare";
+	/** Citation posée EN SURIMPRESSION en bas de l'image. */
+	quote?: string;
+	quoteAuthor?: string;
+	/** Label du champ appât (honeypot), invisible mais annoncé aux robots/lecteurs d'écran. */
+	honeypotLabel?: string;
+	/** Note "champs obligatoires" : texte visible + mot lu par le lecteur d'écran pour l'astérisque. */
+	requiredNoteText?: string;
+	requiredNoteSrWord?: string;
+	/** Messages de validation et d'état, annoncés par le JS du formulaire. */
+	messages?: {
+		valueMissing?: string;
+		checkboxRequired?: string;
+		typeMismatch?: string;
+		tooShort?: string;
+		invalid?: string;
+		formError?: string;
+		formValidNoAction?: string;
+		sending?: string;
+	};
+}
+
+const {
+	eyebrow = "CONTACT",
+	title = "Let's talk about your project",
+	intro = "PLACEHOLDER — response time stated by the client, and what to prepare for a quote.",
+	action = "",
+	method = "POST",
+	submitLabel = "Send my request",
+	infos = [
+		{ label: "Phone", value: "PLACEHOLDER — PHONE NUMBER", icon: "tel" },
+		{ label: "Email", value: "PLACEHOLDER — EMAIL", icon: "mail" },
+		{ label: "Address", value: "PLACEHOLDER — ADDRESS", icon: "pin" },
+		{ label: "Hours", value: "PLACEHOLDER — HOURS", icon: "clock" },
+	],
+	consentLabel = "I agree that my details may be used to get back to me about this request.",
+	tone = "alt",
+	media = null,
+	headingLevel = "h2",
+	id = "contact01",
+	nameLabel = "Full name",
+	phoneLabel = "Phone",
+	emailLabel = "Email",
+	messageLabel = "Your request",
+	serviceLabel = "Preferred service",
+	serviceOptions = [],
+	serviceEmptyOption = "Select a service",
+	dateLabel = "Preferred date",
+	showDateField = false,
+	showTimeField = false,
+	timeLabel = "Preferred time",
+	fieldVariant = "boxed",
+	quote,
+	quoteAuthor,
+	honeypotLabel = "Do not fill in this field",
+	requiredNoteText = "Fields marked with an {asterisk} are required.",
+	requiredNoteSrWord = "asterisk",
+	messages = {},
+} = Astro.props;
+
+const msg = {
+	valueMissing: messages.valueMissing ?? "This field is required.",
+	checkboxRequired: messages.checkboxRequired ?? "You need to check this box to send the form.",
+	typeMismatch: messages.typeMismatch ?? "Check the email address format.",
+	tooShort: messages.tooShort ?? "This answer is too short.",
+	invalid: messages.invalid ?? "Invalid field.",
+	formError: messages.formError ?? "The form has errors. Fix the fields marked below.",
+	formValidNoAction: messages.formValidNoAction ?? "Form valid. No destination configured (empty `action` prop).",
+	sending: messages.sending ?? "Sending…",
+};
+
+const Heading = headingLevel;
+
+const icons: Record<string, string> = {
+	tel: "M4.5 3h3l1.5 3.8-2 1.3a11 11 0 004.9 4.9l1.3-2L17 12.5v3a1.5 1.5 0 01-1.6 1.5A13 13 0 013 4.6 1.5 1.5 0 014.5 3z",
+	mail: "M3 5.5h14v9H3v-9zm0 .5l7 5 7-5",
+	pin: "M10 17s5.5-5 5.5-9a5.5 5.5 0 10-11 0c0 4 5.5 9 5.5 9zm0-7.2a2 2 0 110-4 2 2 0 010 4z",
+	clock: "M10 3a7 7 0 100 14 7 7 0 000-14zm0 3.4V10l2.6 2.1",
+};
+---
+
+<section class={`ctc01 ctc01--${tone} ctc01--fields-${fieldVariant}${tone === "ink" ? " on-dark" : ""}`} id={id}>
+	<div class={`ctc01__inner${media ? " ctc01__inner--media" : ""}`}>
+		<div class="ctc01__aside">
+			{
+				eyebrow && (
+					<p class="ctc01__eyebrow">
+						<span class="ctc01__rule" aria-hidden="true" />
+						{eyebrow}
+					</p>
+				)
+			}
+			<Heading class="ctc01__title">{title}</Heading>
+			{intro && <p class="ctc01__intro">{intro}</p>}
+
+			{
+				infos?.length > 0 && (
+					<ul class="ctc01__infos">
+						{infos.map((info) => (
+							<li class="ctc01__info">
+								<span class="ctc01__info-icon" aria-hidden="true">
+									<svg viewBox="0 0 20 20" width="18" height="18" focusable="false">
+										<path d={icons[info.icon ?? "pin"] ?? icons.pin} fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+									</svg>
+								</span>
+								<span class="ctc01__info-body">
+									<span class="ctc01__info-label">{info.label}</span>
+									{info.href ? (
+										<a class="ctc01__info-value" href={info.href}>
+											{info.value}
+										</a>
+									) : (
+										<span class="ctc01__info-value">{info.value}</span>
+									)}
+								</span>
+							</li>
+						))}
+					</ul>
+				)
+			}
+		</div>
+
+		<form
+			class="ctc01__form"
+			action={action}
+			method={method}
+			novalidate
+			data-ctc01
+			aria-describedby={`${id}-status`}
+		>
+			<div class="ctc01__row">
+				<div class="ctc01__field">
+					<label class="ctc01__label" for={`${id}-name`}>
+						{nameLabel} <span class="ctc01__req" aria-hidden="true">*</span>
+					</label>
+					<input class="ctc01__input" id={`${id}-name`} name="name" type="text" autocomplete="name" required aria-describedby={`${id}-name-err`} />
+					<p class="ctc01__err" id={`${id}-name-err`} data-err hidden></p>
+				</div>
+
+				<div class="ctc01__field">
+					<label class="ctc01__label" for={`${id}-phone`}>{phoneLabel}</label>
+					<input class="ctc01__input" id={`${id}-phone`} name="phone" type="tel" autocomplete="tel" inputmode="tel" aria-describedby={`${id}-phone-err`} />
+					<p class="ctc01__err" id={`${id}-phone-err`} data-err hidden></p>
+				</div>
+			</div>
+
+			<div class="ctc01__field">
+				<label class="ctc01__label" for={`${id}-email`}>
+					{emailLabel} <span class="ctc01__req" aria-hidden="true">*</span>
+				</label>
+				<input class="ctc01__input" id={`${id}-email`} name="email" type="email" autocomplete="email" required aria-describedby={`${id}-email-err`} />
+				<p class="ctc01__err" id={`${id}-email-err`} data-err hidden></p>
+			</div>
+
+			{
+				(serviceOptions.length > 0 || showDateField) && (
+					<div class="ctc01__row">
+						{
+							serviceOptions.length > 0 && (
+								<div class="ctc01__field">
+									<label class="ctc01__label" for={`${id}-service`}>{serviceLabel}</label>
+									<select class="ctc01__input" id={`${id}-service`} name="service">
+										<option value="">{serviceEmptyOption}</option>
+										{serviceOptions.map((opt) => (
+											<option value={opt}>{opt}</option>
+										))}
+									</select>
+								</div>
+							)
+						}
+						{
+							showTimeField && (
+								<div class="ctc01__field">
+									<label class="ctc01__label" for={`${id}-time`}>{timeLabel}</label>
+									<input class="ctc01__input" id={`${id}-time`} name="preferred-time" type="time" />
+								</div>
+							)
+						}
+						{
+							showDateField && (
+								<div class="ctc01__field">
+									<label class="ctc01__label" for={`${id}-date`}>{dateLabel}</label>
+									<input class="ctc01__input" id={`${id}-date`} name="preferred-date" type="date" />
+								</div>
+							)
+						}
+					</div>
+				)
+			}
+
+			<div class="ctc01__field">
+				<label class="ctc01__label" for={`${id}-message`}>
+					{messageLabel} <span class="ctc01__req" aria-hidden="true">*</span>
+				</label>
+				<textarea class="ctc01__input ctc01__textarea" id={`${id}-message`} name="message" rows="5" required aria-describedby={`${id}-message-err`}></textarea>
+				<p class="ctc01__err" id={`${id}-message-err`} data-err hidden></p>
+			</div>
+
+			<div class="ctc01__field ctc01__field--check">
+				<input class="ctc01__checkbox" id={`${id}-consent`} name="consent" type="checkbox" required aria-describedby={`${id}-consent-err`} />
+				<label class="ctc01__consent" for={`${id}-consent`}>
+					{consentLabel} <span class="ctc01__req" aria-hidden="true">*</span>
+				</label>
+				<p class="ctc01__err" id={`${id}-consent-err`} data-err hidden></p>
+			</div>
+
+			{/* Appât : invisible pour l'humain, rempli par les robots. Jamais
+			    display:none seul — certains robots l'ignorent. */}
+			<div class="ctc01__trap" aria-hidden="true">
+				<label for={`${id}-website`}>{honeypotLabel}</label>
+				<input id={`${id}-website`} name="website" type="text" tabindex="-1" autocomplete="off" />
+			</div>
+			<input type="hidden" name="loaded_at" data-loaded-at value="" />
+
+			<button class="ctc01__submit" type="submit">{submitLabel}</button>
+
+			<p class="ctc01__status" id={`${id}-status`} role="status" aria-live="polite"></p>
+			<p class="ctc01__legal">
+				{requiredNoteText.split("{asterisk}")[0]}<span aria-hidden="true">*</span><span class="ctc01__sr">{requiredNoteSrWord}</span>{requiredNoteText.split("{asterisk}")[1]}
+			</p>
+		</form>
+
+		{
+			media && (
+				<figure class="ctc01__media">
+					<Frame width={media.width} height={media.height} radius={media.radius} label={media.label} text={media.text} src={media.src} alt={media.alt} />
+					{quote && (
+						<figcaption class="ctc01__quote">
+							<blockquote class="ctc01__quote-text">{quote}</blockquote>
+							{quoteAuthor && <cite class="ctc01__quote-author">{quoteAuthor}</cite>}
+						</figcaption>
+					)}
+				</figure>
+			)
+		}
+	</div>
+</section>
+
+<style>
+	.ctc01,
+	.ctc01 *,
+	.ctc01 *::before,
+	.ctc01 *::after {
+		box-sizing: border-box;
+	}
+
+	.ctc01 {
+		font-family: var(--brand-font-body);
+		background: var(--color-bg);
+		color: var(--color-text);
+		padding-block: var(--space-section);
+	}
+
+	.ctc01--alt {
+		background: var(--color-bg-alt);
+	}
+
+	.ctc01__inner {
+		display: grid;
+		grid-template-columns: minmax(0, 4fr) minmax(0, 6fr);
+		gap: clamp(var(--space-10), 6vw, var(--space-20));
+		max-width: var(--container);
+		margin-inline: auto;
+		padding-inline: var(--gutter);
+	}
+
+	/* ------------------------------------------------------------------ aside */
+
+	.ctc01__eyebrow {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		margin: 0 0 var(--space-5);
+		font-size: var(--text-2xs);
+		font-weight: var(--weight-semibold);
+		letter-spacing: var(--tracking-eyebrow);
+		text-transform: uppercase;
+		color: var(--color-text-subtle);
+	}
+
+	.ctc01__rule {
+		display: block;
+		width: var(--space-8);
+		height: 2px;
+		background: var(--color-accent);
+		border-radius: var(--radius-pill);
+	}
+
+	.ctc01__title {
+		margin: 0;
+		font-family: var(--brand-font-display);
+		font-size: var(--text-2xl);
+		font-weight: var(--weight-display);
+		line-height: var(--leading-heading);
+		letter-spacing: var(--tracking-heading);
+		text-wrap: balance;
+	}
+
+	.ctc01__intro {
+		margin: var(--space-5) 0 0;
+		font-size: var(--text-base);
+		line-height: var(--leading-body);
+		color: var(--color-text-muted);
+	}
+
+	.ctc01__infos {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-5);
+		margin: var(--space-10) 0 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.ctc01__info {
+		display: flex;
+		align-items: flex-start;
+		gap: var(--space-4);
+	}
+
+	.ctc01__info-icon {
+		display: grid;
+		place-items: center;
+		flex-shrink: 0;
+		width: var(--space-10);
+		height: var(--space-10);
+		color: var(--color-accent);
+		background: var(--color-accent-soft);
+		border-radius: var(--radius-sm);
+	}
+
+	.ctc01__info-body {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		min-width: 0;
+	}
+
+	.ctc01__info-label {
+		font-size: var(--text-xs);
+		font-weight: var(--weight-semibold);
+		letter-spacing: var(--tracking-eyebrow);
+		text-transform: uppercase;
+		color: var(--color-text-subtle);
+	}
+
+	.ctc01__info-value {
+		font-size: var(--text-base);
+		line-height: var(--leading-snug);
+		color: var(--color-text);
+		text-decoration: none;
+		overflow-wrap: anywhere;
+	}
+
+	a.ctc01__info-value:hover {
+		color: var(--color-accent);
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
+	}
+
+	/* ------------------------------------------------------------- formulaire */
+
+	/* LAYOUT.md §2 section 15 : formulaire à GAUCHE (626 de large), cadre
+	   d'image à DROITE (530 × 625, rayon 30), gouttière mesurée à 44.
+	   L'en-tête (étiquette, titre, coordonnées) passe au-dessus des deux :
+	   la référence n'a pas de colonne latérale ici. */
+	.ctc01__inner--media {
+		grid-template-columns: minmax(0, 626fr) minmax(0, 530fr);
+		column-gap: 44px;
+		row-gap: var(--space-12);
+		align-items: start;
+	}
+
+	.ctc01__inner--media .ctc01__aside {
+		grid-column: 1 / -1;
+	}
+
+	/* Alignement en flex, pas en justify-self : voir frame.astro. */
+	.ctc01__inner--media .ctc01__media {
+		display: flex;
+		justify-content: flex-end;
+	}
+
+	.ctc01__form {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-5);
+		padding: var(--space-8);
+		background: var(--color-bg);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-lg);
+	}
+
+	.ctc01--alt .ctc01__form {
+		box-shadow: var(--shadow-sm);
+	}
+
+	/* ------------------------------------------------------------------
+	   SECTION SOMBRE — FORMAT.md §15. `on-dark` est posée en même temps sur la
+	   <section> : tout le contenu bascule dans le jeu inversé d'un coup.
+	   Deux classes, sinon `.on-dark` et `.ctc01--ink` ont la même
+	   spécificité et c'est l'ordre des feuilles qui tranche.
+	   ------------------------------------------------------------------ */
+	.ctc01.ctc01--ink {
+		background: var(--brand-ink);
+	}
+
+	/* CHAMPS NUS : pas de boîte autour du formulaire, pas de boîte autour des
+	   champs, un filet dessous. Le champ reste haut de --tap-target : on
+	   retire le décor, pas la cible tactile. */
+	.ctc01--fields-bare .ctc01__form {
+		padding: 0;
+		background: transparent;
+		border: 0;
+		box-shadow: none;
+	}
+
+	.ctc01--fields-bare .ctc01__input {
+		padding: var(--space-3) 0;
+		background: transparent;
+		border: 0;
+		border-bottom: 1px solid var(--color-border-strong);
+		border-radius: 0;
+	}
+
+	.ctc01--fields-bare .ctc01__input:focus {
+		border-bottom-color: var(--color-accent);
+	}
+
+	/* Le sélecteur et les champs date/heure natifs rendent leur flèche et leur
+	   icône dans la couleur du texte : sur fond sombre, sans ça, ils restent
+	   noirs sur noir. */
+	.ctc01--ink .ctc01__input {
+		color-scheme: dark;
+	}
+
+	/* LA CITATION EN SURIMPRESSION — FORMAT.md §15. Le voile est un aplat,
+	   pas un dégradé : un dégradé laisse le haut du texte presque nu. Le
+	   plancher d'opacité est calculé pour une photo ENTIÈREMENT BLANCHE, comme
+	   celui du hero — c'est le seul réglage qui tienne quelle que soit
+	   l'image qu'on posera ensuite. */
+	.ctc01__media {
+		position: relative;
+		margin: 0;
+	}
+
+	.ctc01__quote {
+		position: absolute;
+		inset: auto 0 0 0;
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+		padding: var(--space-10) var(--space-6) var(--space-6);
+		color: #ffffff;
+		background: color-mix(in oklab, var(--brand-ink) 72%, transparent);
+		border-end-start-radius: 30px;
+		border-end-end-radius: 30px;
+	}
+
+	.ctc01__quote-text {
+		margin: 0;
+		font-size: var(--text-md);
+		line-height: var(--leading-snug);
+	}
+
+	.ctc01__quote-author {
+		font-size: var(--text-sm);
+		font-style: normal;
+		color: color-mix(in oklab, #ffffff 78%, var(--brand-ink));
+	}
+
+	.ctc01__row {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: var(--space-5);
+	}
+
+	.ctc01__field {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+		min-width: 0;
+	}
+
+	.ctc01__label {
+		font-size: var(--text-sm);
+		font-weight: var(--weight-semibold);
+		color: var(--color-text);
+	}
+
+	.ctc01__req {
+		color: var(--color-accent);
+	}
+
+	.ctc01__input {
+		width: 100%;
+		min-height: var(--tap-target);
+		padding: var(--space-3) var(--space-4);
+		font-family: inherit;
+		font-size: var(--text-base);
+		line-height: var(--leading-snug);
+		color: var(--color-text);
+		background: var(--color-bg);
+		border: 1px solid var(--color-border-strong);
+		border-radius: var(--radius-sm);
+		transition:
+			border-color var(--dur-fast) var(--ease),
+			box-shadow var(--dur-fast) var(--ease);
+	}
+
+	.ctc01__input:hover {
+		border-color: var(--color-text-subtle);
+	}
+
+	/* Focus d'un champ : la bordure prend la couleur de marque ET un halo se
+	   pose. L'anneau de focus général s'ajoute par-dessus au clavier. */
+	.ctc01__input:focus {
+		outline: none;
+		border-color: var(--color-accent);
+		box-shadow: 0 0 0 3px var(--color-accent-soft);
+	}
+
+	.ctc01__input[aria-invalid="true"] {
+		border-color: #c0392b;
+		box-shadow: 0 0 0 3px color-mix(in oklab, #c0392b 12%, transparent);
+	}
+
+	.ctc01__textarea {
+		min-height: 8rem;
+		resize: vertical;
+	}
+
+	.ctc01__field--check {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		align-items: center;
+		/* La case seule ferait 18px : sous le minimum de cible. Le <label>
+		   associé étend la zone, et la rangée garantit la hauteur. */
+		min-height: var(--tap-target);
+		gap: var(--space-3);
+	}
+
+	.ctc01__checkbox {
+		width: 1.5rem;
+		height: 1.5rem;
+		accent-color: var(--color-accent);
+	}
+
+	.ctc01__consent {
+		display: flex;
+		align-items: center;
+		/* Le <label> est la vraie cible tactile de la case : il doit atteindre
+		   la hauteur minimale, la case seule ne fait que 24px. */
+		min-height: var(--tap-target);
+		font-size: var(--text-sm);
+		line-height: var(--leading-snug);
+		color: var(--color-text-muted);
+	}
+
+	.ctc01__field--check .ctc01__err {
+		grid-column: 1 / -1;
+	}
+
+	.ctc01__err {
+		margin: 0;
+		font-size: var(--text-sm);
+		line-height: var(--leading-snug);
+		color: #c0392b;
+	}
+
+	/* Le piège à robots : hors écran, jamais display:none, et retiré de la
+	   tabulation par tabindex="-1". */
+	.ctc01__trap {
+		position: absolute;
+		left: -9999px;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+	}
+
+	.ctc01__submit {
+		align-self: flex-start;
+		min-height: var(--tap-target);
+		margin-top: var(--space-2);
+		padding: var(--space-4) var(--space-8);
+		font-family: inherit;
+		font-size: var(--text-base);
+		font-weight: var(--weight-semibold);
+		line-height: 1;
+		color: var(--color-on-action);
+		background: var(--color-action);
+		border: 0;
+		border-radius: var(--radius-sm);
+		cursor: pointer;
+		transition:
+			background-color var(--dur-fast) var(--ease),
+			transform var(--dur-fast) var(--ease),
+			box-shadow var(--dur-fast) var(--ease);
+		/* L'aplat ambre ne fait que 2,08:1 contre le creme : c'est cette
+		   bordure qui delimite le bouton sur fond clair (7,03:1). Sur fond
+		   sombre le scope .on-dark la ramene a l'ambre, l'aplat suffit. */
+		border: 1.5px solid var(--color-action-border);
+	
+	}
+
+	.ctc01__submit:hover {
+		background: var(--color-action-hover);
+		box-shadow: var(--shadow-md);
+		transform: translateY(-1px);
+	}
+
+	.ctc01__submit:active {
+		background: var(--color-action-active);
+		box-shadow: none;
+		transform: translateY(0);
+	}
+
+	.ctc01__submit[disabled] {
+		cursor: progress;
+		opacity: 0.7;
+		transform: none;
+		box-shadow: none;
+	}
+
+	.ctc01__status {
+		margin: 0;
+		font-size: var(--text-sm);
+		line-height: var(--leading-snug);
+		color: var(--color-text-muted);
+	}
+
+	.ctc01__status:empty {
+		display: none;
+	}
+
+	.ctc01__status[data-state="error"] {
+		color: #c0392b;
+	}
+
+	.ctc01__legal {
+		margin: 0;
+		font-size: var(--text-xs);
+		color: var(--color-text-subtle);
+	}
+
+	.ctc01__sr {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	.ctc01 :focus-visible {
+		outline: var(--focus-width) solid var(--color-focus);
+		outline-offset: var(--focus-offset);
+	}
+
+	@media (max-width: 61.999rem) {
+		.ctc01__inner {
+			grid-template-columns: minmax(0, 1fr);
+			gap: var(--space-12);
+		}
+
+		/* Empilé : en-tête, formulaire, puis le cadre. */
+		.ctc01__inner--media {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.ctc01__inner--media .ctc01__media {
+			justify-content: flex-start;
+		}
+	}
+
+	@media (max-width: 39.999rem) {
+		.ctc01__row {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.ctc01__form {
+			padding: var(--space-6);
+		}
+
+		.ctc01__submit {
+			align-self: stretch;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.ctc01__input,
+		.ctc01__submit {
+			transition-duration: 0.01ms !important;
+		}
+	}
+</style>
+
+<script define:vars={{ ctc01Messages: msg }}>
+	function initCtc01() {
+		document.querySelectorAll("[data-ctc01]").forEach((form) => {
+			if (form.dataset.ctcReady === "true") return;
+			form.dataset.ctcReady = "true";
+
+			const status = form.querySelector(".ctc01__status");
+			const submit = form.querySelector(".ctc01__submit");
+			const stamp = form.querySelector("[data-loaded-at]");
+			if (stamp) stamp.value = String(Date.now());
+
+			const messages = ctc01Messages;
+
+			const errorFor = (field) => {
+				const v = field.validity;
+				if (v.valueMissing) return field.type === "checkbox" ? messages.checkboxRequired : messages.valueMissing;
+				if (v.typeMismatch) return messages.typeMismatch;
+				if (v.tooShort) return messages.tooShort;
+				return field.validationMessage || messages.invalid;
+			};
+
+			const showError = (field, msg) => {
+				const box = field.closest(".ctc01__field")?.querySelector("[data-err]");
+				if (!box) return;
+				if (msg) {
+					box.textContent = msg;
+					box.hidden = false;
+					field.setAttribute("aria-invalid", "true");
+				} else {
+					box.textContent = "";
+					box.hidden = true;
+					field.removeAttribute("aria-invalid");
+				}
+			};
+
+			const fields = Array.from(form.querySelectorAll("input[required], textarea[required], input[type=email]"));
+
+			// On ne valide un champ qu'APRÈS l'avoir quitté : afficher une erreur
+			// pendant la frappe est le meilleur moyen de faire abandonner.
+			fields.forEach((f) => {
+				f.addEventListener("blur", () => showError(f, f.checkValidity() ? "" : errorFor(f)));
+				f.addEventListener("input", () => {
+					if (f.getAttribute("aria-invalid") === "true" && f.checkValidity()) showError(f, "");
+				});
+			});
+
+			form.addEventListener("submit", (e) => {
+				let firstInvalid = null;
+				fields.forEach((f) => {
+					const ok = f.checkValidity();
+					showError(f, ok ? "" : errorFor(f));
+					if (!ok && !firstInvalid) firstInvalid = f;
+				});
+
+				if (firstInvalid) {
+					e.preventDefault();
+					status.dataset.state = "error";
+					status.textContent = messages.formError;
+					firstInvalid.focus();
+					return;
+				}
+
+				status.dataset.state = "";
+				status.textContent = "";
+
+				// Sans action définie, le bloc est en démonstration : on empêche
+				// l'envoi plutôt que de recharger la page dans le vide.
+				if (!form.getAttribute("action")) {
+					e.preventDefault();
+					status.textContent = messages.formValidNoAction;
+					return;
+				}
+
+				if (submit) {
+					submit.disabled = true;
+					submit.textContent = messages.sending;
+				}
+			});
+		});
+	}
+
+	initCtc01();
+	document.addEventListener("astro:page-load", initCtc01);
+</script>

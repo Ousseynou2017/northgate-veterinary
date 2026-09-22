@@ -1,0 +1,501 @@
+---
+/**
+ * gallery-01 — grille d'images avec visionneuse
+ *
+ * La visionneuse est un <dialog> natif : le piège à focus, la touche Échap et
+ * le fond inerte sont gérés par le navigateur. Zéro dépendance.
+ *
+ * Chaque vignette est un <button> (elle ouvre quelque chose, elle ne navigue
+ * pas). L'intitulé du bouton reprend l'alt de l'image.
+ */
+
+export interface GalleryImage {
+	src: string;
+	alt: string;
+	width?: number;
+	height?: number;
+	/** Version pleine taille si différente de la vignette. */
+	fullSrc?: string;
+	caption?: string;
+}
+
+export interface Props {
+	eyebrow?: string;
+	title?: string;
+	intro?: string;
+	images?: GalleryImage[];
+	columns?: 2 | 3 | 4;
+	tone?: "default" | "alt";
+	headingLevel?: "h2" | "h3";
+	/** Identifiant unique si plusieurs galeries cohabitent sur une page. */
+	id?: string;
+	/** Préfixe de l'aria-label du bouton d'agrandissement, suivi de l'alt. */
+	zoomLabel?: string;
+	/** aria-label de la visionneuse plein écran. */
+	viewerLabel?: string;
+	prevLabel?: string;
+	nextLabel?: string;
+	closeLabel?: string;
+	/** Libellé de la vignette vide, et de son aria-label (avec {n} pour le numéro). */
+	placeholderLabel?: string;
+	placeholderAriaLabel?: string;
+}
+
+const {
+	eyebrow = "PROJECTS",
+	title = "Our projects",
+	intro,
+	images = [],
+	columns = 3,
+	tone = "default",
+	headingLevel = "h2",
+	id = "gal01",
+	zoomLabel = "Enlarge:",
+	viewerLabel = "Photo viewer",
+	prevLabel = "Previous photo",
+	nextLabel = "Next photo",
+	closeLabel = "Close photo viewer",
+	placeholderLabel = "PHOTO",
+	placeholderAriaLabel = "PLACEHOLDER — project photo {n} to be provided by the client",
+} = Astro.props;
+
+const Heading = headingLevel;
+// Sans images fournies, on affiche des emplacements explicites plutôt que des
+// photos de banque : une galerie de stock ne prouve rien.
+const placeholders = images.length === 0 ? Array.from({ length: 6 }, (_, i) => i) : [];
+---
+
+<section class={`gal01 gal01--${tone}`} id={id} data-gal01 data-gal-id={id}>
+	<div class="gal01__inner">
+		<header class="gal01__head gal01__head--center">
+			{
+				eyebrow && (
+					<p class="ctc01__eyebrow">
+						<span class="ctc01__eyebrow-dot" aria-hidden="true" />
+						{eyebrow}
+					</p>
+				)
+			}
+			<Heading class="gal01__title">{title}</Heading>
+			{intro && <p class="gal01__intro">{intro}</p>}
+		</header>
+
+		<ul class="gal01__grid" style={`--gal-cols:${columns}`}>
+			{
+				images.map((img, i) => (
+					<li class="gal01__item">
+						<button
+							type="button"
+							class="gal01__thumb"
+							data-gal-open
+							data-index={i}
+							aria-label={`${zoomLabel} ${img.alt || `image ${i + 1}`}`}
+						>
+							<img
+								src={img.src}
+								alt={img.alt}
+								width={img.width ?? 800}
+								height={img.height ?? 600}
+								loading="lazy"
+								decoding="async"
+							/>
+							<span class="gal01__zoom" aria-hidden="true">
+								<svg viewBox="0 0 20 20" width="18" height="18" focusable="false">
+									<circle cx="9" cy="9" r="6" fill="none" stroke="currentColor" stroke-width="1.8" />
+									<path d="M13.5 13.5L18 18M9 6.5v5M6.5 9h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+								</svg>
+							</span>
+						</button>
+						{img.caption && <p class="gal01__caption">{img.caption}</p>}
+					</li>
+				))
+			}
+			{
+				placeholders.map((i) => (
+					<li class="gal01__item">
+						<div class="gal01__thumb gal01__thumb--empty" role="img" aria-label={placeholderAriaLabel.replace("{n}", String(i + 1))}>
+							<span>{placeholderLabel} {i + 1}</span>
+						</div>
+					</li>
+				))
+			}
+		</ul>
+	</div>
+
+	{
+		images.length > 0 && (
+			<dialog class="gal01__dialog" data-gal-dialog aria-label={viewerLabel}>
+				<div class="gal01__viewer">
+					<img class="gal01__full" data-gal-full src="" alt="" />
+					<p class="gal01__full-caption" data-gal-caption />
+
+					<button type="button" class="gal01__nav gal01__nav--prev" data-gal-prev aria-label={prevLabel}>
+						<svg viewBox="0 0 12 20" width="12" height="20" aria-hidden="true" focusable="false">
+							<path d="M10 1L2 10l8 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+						</svg>
+					</button>
+					<button type="button" class="gal01__nav gal01__nav--next" data-gal-next aria-label={nextLabel}>
+						<svg viewBox="0 0 12 20" width="12" height="20" aria-hidden="true" focusable="false">
+							<path d="M2 1l8 9-8 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+						</svg>
+					</button>
+					<button type="button" class="gal01__close" data-gal-close aria-label={closeLabel}>
+						<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+							<path d="M2 2l12 12M14 2L2 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+						</svg>
+					</button>
+					<p class="gal01__counter" data-gal-counter aria-live="polite" />
+				</div>
+			</dialog>
+		)
+	}
+
+	<script type="application/json" data-gal-data set:html={JSON.stringify(images.map((i) => ({ src: i.fullSrc ?? i.src, alt: i.alt, caption: i.caption ?? "" })))} />
+</section>
+
+<style>
+	.gal01,
+	.gal01 *,
+	.gal01 *::before,
+	.gal01 *::after {
+		box-sizing: border-box;
+	}
+
+	.gal01 {
+		font-family: var(--brand-font-body);
+		background: var(--color-bg);
+		color: var(--color-text);
+		padding-block: var(--space-section);
+	}
+
+	.gal01--alt {
+		background: var(--color-bg-alt);
+	}
+
+	.gal01__inner {
+		max-width: var(--container-wide);
+		margin-inline: auto;
+		padding-inline: var(--gutter);
+	}
+
+	.gal01__head {
+		max-width: var(--measure);
+		margin-bottom: var(--space-12);
+	}
+
+	.gal01__head--center {
+		max-width: var(--measure-heading);
+		margin-inline: auto;
+		text-align: center;
+	}
+
+	.gal01__head--center .ctc01__eyebrow {
+		justify-content: center;
+	}
+
+	.gal01__title {
+		margin: 0;
+		font-family: var(--brand-font-display);
+		font-size: var(--text-2xl);
+		font-weight: var(--weight-display);
+		line-height: var(--leading-heading);
+		letter-spacing: var(--tracking-heading);
+		text-wrap: balance;
+	}
+
+	.gal01__intro {
+		margin: var(--space-5) 0 0;
+		font-size: var(--text-md);
+		line-height: var(--leading-snug);
+		color: var(--color-text-muted);
+	}
+
+	/* ------------------------------------------------------------------ grille */
+
+	.gal01__grid {
+		display: grid;
+		grid-template-columns: repeat(var(--gal-cols, 3), minmax(0, 1fr));
+		gap: var(--space-4);
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.gal01__thumb {
+		position: relative;
+		display: block;
+		width: 100%;
+		padding: 0;
+		overflow: hidden;
+		background: var(--color-bg-sunken);
+		border: 0;
+		border-radius: var(--radius-md);
+		cursor: pointer;
+	}
+
+	.gal01__thumb img {
+		display: block;
+		width: 100%;
+		height: 100%;
+		aspect-ratio: 4 / 3;
+		object-fit: cover;
+		transition: transform var(--dur-slow) var(--ease);
+	}
+
+	.gal01__thumb:hover img {
+		transform: scale(1.04);
+	}
+
+	/* La pastille de zoom monte depuis le bas au survol : on annonce l'action
+	   au lieu de simplement éclaircir l'image. */
+	.gal01__zoom {
+		position: absolute;
+		right: var(--space-3);
+		bottom: var(--space-3);
+		display: grid;
+		place-items: center;
+		width: var(--space-10);
+		height: var(--space-10);
+		color: var(--color-on-accent);
+		background: var(--color-accent);
+		border-radius: var(--radius-sm);
+		opacity: 0;
+		transform: translateY(var(--space-3));
+		transition:
+			opacity var(--dur) var(--ease),
+			transform var(--dur) var(--ease);
+	}
+
+	.gal01__thumb:hover .gal01__zoom,
+	.gal01__thumb:focus-visible .gal01__zoom {
+		opacity: 1;
+		transform: translateY(0);
+	}
+
+	.gal01__thumb--empty {
+		display: grid;
+		place-items: center;
+		aspect-ratio: 4 / 3;
+		border: 1px dashed var(--color-border-strong);
+		font-size: var(--text-sm);
+		font-weight: var(--weight-semibold);
+		letter-spacing: var(--tracking-eyebrow);
+		color: var(--color-text-muted);
+		cursor: default;
+	}
+
+	.gal01__caption {
+		margin: var(--space-3) 0 0;
+		font-size: var(--text-sm);
+		line-height: var(--leading-snug);
+		color: var(--color-text-subtle);
+	}
+
+	.gal01 :focus-visible {
+		outline: var(--focus-width) solid var(--color-focus);
+		outline-offset: var(--focus-offset);
+	}
+
+	/* ------------------------------------------------------------- visionneuse */
+
+	.gal01__dialog {
+		width: min(72rem, 94vw);
+		max-width: none;
+		max-height: 92vh;
+		padding: 0;
+		background: transparent;
+		border: 0;
+		overflow: visible;
+	}
+
+	.gal01__dialog::backdrop {
+		background: color-mix(in oklab, #000 78%, transparent);
+	}
+
+	.gal01__viewer {
+		position: relative;
+	}
+
+	.gal01__full {
+		display: block;
+		width: 100%;
+		max-height: 78vh;
+		object-fit: contain;
+		background: #000;
+		border-radius: var(--radius-md);
+	}
+
+	.gal01__full-caption {
+		margin: var(--space-4) 0 0;
+		font-size: var(--text-sm);
+		line-height: var(--leading-snug);
+		color: #fff;
+		text-align: center;
+	}
+
+	.gal01__nav,
+	.gal01__close {
+		position: absolute;
+		display: grid;
+		place-items: center;
+		width: var(--tap-target);
+		height: var(--tap-target);
+		color: #fff;
+		background: color-mix(in oklab, #000 55%, transparent);
+		border: 1px solid color-mix(in oklab, #fff 22%, transparent);
+		border-radius: var(--radius-pill);
+		cursor: pointer;
+		transition:
+			background-color var(--dur-fast) var(--ease),
+			transform var(--dur-fast) var(--ease);
+	}
+
+	.gal01__nav:hover,
+	.gal01__close:hover {
+		background: color-mix(in oklab, #000 80%, transparent);
+		transform: scale(1.06);
+	}
+
+	.gal01__nav--prev {
+		top: 50%;
+		left: var(--space-4);
+		translate: 0 -50%;
+	}
+
+	.gal01__nav--next {
+		top: 50%;
+		right: var(--space-4);
+		translate: 0 -50%;
+	}
+
+	.gal01__close {
+		top: calc(var(--tap-target) * -1 - var(--space-3));
+		right: 0;
+	}
+
+	.gal01__counter {
+		margin: var(--space-2) 0 0;
+		font-size: var(--text-xs);
+		letter-spacing: var(--tracking-eyebrow);
+		color: color-mix(in oklab, #fff 70%, transparent);
+		text-align: center;
+	}
+
+	.gal01__dialog :focus-visible {
+		outline: var(--focus-width) solid #fff;
+		outline-offset: var(--focus-offset);
+	}
+
+	/* ---------------------------------------------------------------- écrans */
+
+	@media (max-width: 61.999rem) {
+		.gal01__grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+
+	@media (max-width: 39.999rem) {
+		.gal01__grid {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.gal01__close {
+			top: calc(var(--tap-target) * -1 - var(--space-2));
+		}
+
+		.gal01__nav--prev {
+			left: var(--space-2);
+		}
+
+		.gal01__nav--next {
+			right: var(--space-2);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.gal01__thumb img,
+		.gal01__zoom,
+		.gal01__nav,
+		.gal01__close {
+			transition-duration: 0.01ms !important;
+		}
+	}
+</style>
+
+<script>
+	function initGal01() {
+		document.querySelectorAll("[data-gal01]").forEach((root) => {
+			if (root.dataset.galReady === "true") return;
+			root.dataset.galReady = "true";
+
+			const dialog = root.querySelector("[data-gal-dialog]");
+			const dataTag = root.querySelector("[data-gal-data]");
+			if (!dialog || !dataTag) return;
+
+			let items = [];
+			try {
+				items = JSON.parse(dataTag.textContent || "[]");
+			} catch {
+				return;
+			}
+			if (items.length === 0) return;
+
+			const full = dialog.querySelector("[data-gal-full]");
+			const caption = dialog.querySelector("[data-gal-caption]");
+			const counter = dialog.querySelector("[data-gal-counter]");
+			const prev = dialog.querySelector("[data-gal-prev]");
+			const next = dialog.querySelector("[data-gal-next]");
+			const close = dialog.querySelector("[data-gal-close]");
+			let index = 0;
+
+			const show = (i) => {
+				index = (i + items.length) % items.length;
+				const item = items[index];
+				full.src = item.src;
+				full.alt = item.alt;
+				caption.textContent = item.caption;
+				caption.hidden = !item.caption;
+				counter.textContent = `${index + 1} / ${items.length}`;
+				// Une seule image : les flèches n'ont rien à faire là.
+				const solo = items.length < 2;
+				prev.hidden = solo;
+				next.hidden = solo;
+			};
+
+			root.querySelectorAll("[data-gal-open]").forEach((btn) => {
+				btn.addEventListener("click", () => {
+					show(Number(btn.dataset.index) || 0);
+					dialog.showModal();
+				});
+			});
+
+			prev.addEventListener("click", () => show(index - 1));
+			next.addEventListener("click", () => show(index + 1));
+			close.addEventListener("click", () => dialog.close());
+
+			// Flèches du clavier. Échap est géré nativement par <dialog>.
+			dialog.addEventListener("keydown", (e) => {
+				if (e.key === "ArrowLeft") {
+					e.preventDefault();
+					show(index - 1);
+				} else if (e.key === "ArrowRight") {
+					e.preventDefault();
+					show(index + 1);
+				}
+			});
+
+			// Clic sur le fond : le <dialog> reçoit le clic hors de son contenu.
+			dialog.addEventListener("click", (e) => {
+				if (e.target === dialog) dialog.close();
+			});
+
+			// Le focus revient sur la vignette d'origine à la fermeture.
+			dialog.addEventListener("close", () => {
+				root.querySelector(`[data-gal-open][data-index="${index}"]`)?.focus();
+			});
+		});
+	}
+
+	initGal01();
+	document.addEventListener("astro:page-load", initGal01);
+</script>

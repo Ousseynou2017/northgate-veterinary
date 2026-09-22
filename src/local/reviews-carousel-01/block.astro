@@ -1,0 +1,468 @@
+---
+/**
+ * reviews-carousel-01 — les avis en CARROUSEL, 3 cartes visibles.
+ *
+ * BLOC LOCAL AU PROJET. Mécanisme relevé sur la référence, §2 section 11 de
+ * LAYOUT.md : 6 avis, 3 cartes visibles de 371 px, gouttière ≈ 19 px.
+ *
+ * Il remplace testimonials-01 sur cette section. testimonials-01 reste en
+ * bibliothèque, et reste utilisé sur cette page pour la citation de clôture :
+ * sa grille n'est pas un défaut, c'est un autre objet.
+ *
+ * ACCESSIBILITÉ — un carrousel qu'on ne parcourt pas au clavier est un défaut.
+ * Ce qui est posé ici :
+ *   1. La piste est une zone de défilement focalisable (tabindex=0, role
+ *      group, nom accessible) : flèches gauche/droite, Début, Fin, comme
+ *      n'importe quelle zone défilable native.
+ *   2. Deux vrais <button> précédent/suivant, avec un nom accessible, donc
+ *      atteignables à la tabulation et actionnables à l'Entrée comme à l'Espace.
+ *      Ils se désactivent aux deux bouts.
+ *   3. Aucun avis n'est masqué : les six sont dans le DOM en permanence, rien
+ *      n'est en display:none. Un lecteur d'écran et la recherche dans la page
+ *      les trouvent tous.
+ *   4. Aucun défilement automatique : rien ne bouge sans une action.
+ *
+ * MOUVEMENT RÉDUIT — le défilement passe de `smooth` à instantané, en CSS et
+ * dans le script. Le carrousel reste entièrement utilisable : on retire le
+ * mouvement, pas la fonction.
+ */
+
+export interface Review {
+	quote: string;
+	name: string;
+	role?: string;
+	/** Note chiffrée, sur 5 — la référence en affiche une par avis. */
+	rating?: number;
+	/**
+	 * Portrait. Absent — c'est le cas sur cette page — le bloc affiche un
+	 * monogramme. Un témoignage écrit pour la maquette ne porte pas le visage
+	 * de quelqu'un : ce serait lui prêter des mots.
+	 */
+	photoSrc?: string;
+	photoAlt?: string;
+}
+
+export interface Props {
+	id?: string;
+	eyebrow?: string;
+	title?: string;
+	reviews?: Review[];
+	/** Largeur d'une carte, en px. Le relevé donne 371. */
+	cardWidth?: number;
+	/** Gouttière entre deux cartes, en px. Le relevé donne 19. */
+	gap?: number;
+	tone?: "default" | "alt";
+	headingLevel?: "h2" | "h3";
+	prevLabel?: string;
+	nextLabel?: string;
+	regionLabel?: string;
+}
+
+const {
+	id,
+	eyebrow = "Reviews",
+	title = "Reviews",
+	reviews = [],
+	cardWidth = 371,
+	gap = 19,
+	tone = "alt",
+	headingLevel = "h2",
+	prevLabel = "Previous reviews",
+	nextLabel = "Next reviews",
+	regionLabel = "Reviews — scrollable with the arrow keys",
+} = Astro.props;
+
+const Heading = headingLevel;
+const initials = (n: string) =>
+	n
+		.split(/\s+/)
+		.filter(Boolean)
+		.slice(0, 2)
+		.map((w) => w[0])
+		.join("")
+		.toUpperCase();
+---
+
+<section class={`rvc01 rvc01--${tone}`} id={id} data-rvc01>
+	<div class="rvc01__inner">
+		<header class="rvc01__head">
+			<div class="rvc01__headings">
+				{
+					eyebrow && (
+						<p class="ctc01__eyebrow">
+							<span class="ctc01__eyebrow-dot" aria-hidden="true" />
+							{eyebrow}
+						</p>
+					)
+				}
+				<Heading class="rvc01__title">{title}</Heading>
+			</div>
+
+			<div class="rvc01__nav">
+				<button type="button" class="rvc01__btn" data-rvc-prev aria-label={prevLabel}>
+					<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+						<path d="M10 2L4 8l6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+					</svg>
+				</button>
+				<button type="button" class="rvc01__btn" data-rvc-next aria-label={nextLabel}>
+					<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+						<path d="M6 2l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+					</svg>
+				</button>
+			</div>
+		</header>
+
+		<ul
+			class="rvc01__track"
+			style={`--rvc-card:${cardWidth}px; --rvc-gap:${gap}px`}
+			tabindex="0"
+			role="group"
+			aria-label={regionLabel}
+			data-rvc-track
+		>
+			{
+				reviews.map((r) => (
+					<li class="rvc01__item">
+						<figure class="rvc01__card">
+							<svg class="rvc01__mark" viewBox="0 0 32 24" width="32" height="24" aria-hidden="true" focusable="false">
+								<path
+									d="M13 24V13.2C13 5.9 17.2 1.2 24.6 0l1.4 3.6c-4.3 1.1-6.6 3.6-6.9 7.4H24V24H13zm-13 0V13.2C0 5.9 4.2 1.2 11.6 0L13 3.6C8.7 4.7 6.4 7.2 6.1 11H11V24H0z"
+									fill="currentColor"
+								/>
+							</svg>
+
+							{r.rating != null && (
+								<p class="rvc01__rating">
+									<span class="rvc01__rating-star" aria-hidden="true">★</span>
+									<span>{r.rating.toFixed(1)}</span>
+									<span class="rvc01__sr">out of 5</span>
+								</p>
+							)}
+
+							<blockquote class="rvc01__quote">
+								<p>{r.quote}</p>
+							</blockquote>
+
+							<figcaption class="rvc01__author">
+								{r.photoSrc ? (
+									<img class="rvc01__photo rvc01__photo--img" src={r.photoSrc} alt={r.photoAlt ?? ""} width="48" height="48" loading="eager" decoding="async" />
+								) : (
+									<span class="rvc01__photo" aria-hidden="true">
+										{initials(r.name)}
+									</span>
+								)}
+								<span class="rvc01__identity">
+									<span class="rvc01__name">{r.name}</span>
+									{r.role && <span class="rvc01__role">{r.role}</span>}
+								</span>
+							</figcaption>
+						</figure>
+					</li>
+				))
+			}
+		</ul>
+	</div>
+</section>
+
+<style>
+	.rvc01,
+	.rvc01 *,
+	.rvc01 *::before,
+	.rvc01 *::after {
+		box-sizing: border-box;
+	}
+
+	.rvc01 {
+		font-family: var(--brand-font-body);
+		background: var(--color-bg);
+		color: var(--color-text);
+		padding-block: var(--space-section);
+		overflow-x: clip;
+	}
+
+	.rvc01--alt {
+		background: var(--color-bg-alt);
+	}
+
+	.rvc01__inner {
+		max-width: var(--container);
+		margin-inline: auto;
+		padding-inline: var(--gutter);
+	}
+
+	.rvc01__head {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: end;
+		gap: var(--space-8);
+		margin-bottom: var(--space-12);
+	}
+
+	.rvc01__headings {
+		min-width: 0;
+	}
+
+	.rvc01__title {
+		margin: 0;
+		font-family: var(--brand-font-display);
+		font-size: var(--text-2xl);
+		font-weight: var(--weight-display);
+		line-height: var(--leading-heading);
+		letter-spacing: var(--tracking-heading);
+	}
+
+	.rvc01__nav {
+		display: flex;
+		gap: var(--space-3);
+	}
+
+	.rvc01__btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: var(--tap-target);
+		height: var(--tap-target);
+		color: var(--color-text);
+		background: var(--color-bg);
+		border: 1px solid var(--color-border-strong);
+		border-radius: var(--radius-pill);
+		cursor: pointer;
+		transition:
+			color var(--dur-fast) var(--ease),
+			background-color var(--dur-fast) var(--ease),
+			border-color var(--dur-fast) var(--ease);
+	}
+
+	.rvc01__btn:hover {
+		color: var(--color-on-accent);
+		background: var(--color-accent);
+		border-color: var(--color-accent);
+	}
+
+	/* Une flèche sans cible reste visible, mais se signale inutilisable. */
+	.rvc01__btn[disabled] {
+		opacity: 0.4;
+		cursor: default;
+	}
+
+	.rvc01__btn[disabled]:hover {
+		color: var(--color-text);
+		background: var(--color-bg);
+		border-color: var(--color-border-strong);
+	}
+
+	.rvc01 :focus-visible {
+		outline: var(--focus-width) solid var(--color-focus);
+		outline-offset: var(--focus-offset);
+	}
+
+	/* La piste : cartes de 371, gouttière 19, trois visibles dans 1151.
+	   scroll-snap pour que le défilement retombe toujours sur une carte. */
+	.rvc01__track {
+		display: flex;
+		gap: var(--rvc-gap, 19px);
+		margin: 0;
+		padding: 0 0 var(--space-2);
+		list-style: none;
+		overflow-x: auto;
+		scroll-snap-type: x mandatory;
+		scroll-behavior: smooth;
+		scrollbar-width: none;
+		-ms-overflow-style: none;
+	}
+
+	.rvc01__track::-webkit-scrollbar {
+		display: none;
+	}
+
+	.rvc01__item {
+		display: flex;
+		flex: none;
+		width: var(--rvc-card, 371px);
+		max-width: 85vw;
+		scroll-snap-align: start;
+	}
+
+	.rvc01__card {
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		margin: 0;
+		padding: var(--space-6) var(--space-5);
+		background: var(--color-bg);
+		border-radius: var(--radius-md);
+	}
+
+	.rvc01__mark {
+		margin-bottom: var(--space-5);
+		color: var(--color-accent-line);
+	}
+
+	.rvc01__rating {
+		/* `position: relative` n'est PAS decoratif : le « out of 5 » caché est en
+		   position absolue, et sans ancêtre positionné son bloc conteneur
+		   devient le bloc initial. Il ÉCHAPPE alors au `overflow-x: clip` de la
+		   section, et les cartes 4 à 6 du carrousel — hors écran à droite —
+		   poussent le scrollWidth du document. Mesuré : 675 px de débordement
+		   aux quatre largeurs, apparu avec la note chiffrée. */
+		position: relative;
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		margin: 0 0 var(--space-4);
+		font-size: var(--text-sm);
+		font-weight: var(--weight-semibold);
+		color: var(--color-text);
+	}
+
+	.rvc01__rating-star {
+		color: var(--color-action);
+		font-size: var(--text-base);
+	}
+
+	/* Le « sur 5 » n'est lu que par un lecteur d'écran : à l'œil, l'étoile
+	   le dit déjà, et la carte est étroite. */
+	.rvc01__sr {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	.rvc01__quote {
+		flex: 1;
+		margin: 0 0 var(--space-6);
+	}
+
+	.rvc01__quote p {
+		margin: 0;
+		font-size: var(--text-base);
+		line-height: var(--leading-body);
+		color: var(--color-text);
+	}
+
+	.rvc01__author {
+		display: flex;
+		align-items: center;
+		gap: var(--space-4);
+		padding-top: var(--space-5);
+		border-top: 1px solid var(--color-border);
+	}
+
+	/* LE MONOGRAMME — et pas un portrait. Les six témoignages sont écrits pour
+	   la maquette : y attacher le visage d'une personne réelle, même sous
+	   licence libre, lui fait dire ce qu'elle n'a jamais dit. Le bandeau
+	   « concept piece » couvre un texte inventé, pas un visage emprunté.
+	   Les deux couleurs sortent des tokens : accent sur accent-soft, anneau en
+	   accent-line. Contraste mesuré, cf. reference/IMAGES.md. */
+	.rvc01__photo {
+		display: grid;
+		place-items: center;
+		flex-shrink: 0;
+		width: var(--space-12);
+		height: var(--space-12);
+		font-family: var(--brand-font-display);
+		font-size: var(--text-base);
+		font-weight: var(--weight-semibold);
+		letter-spacing: 0.02em;
+		color: var(--color-accent);
+		background: var(--color-accent-soft);
+		border: 1px solid var(--color-accent-line);
+		border-radius: var(--radius-pill);
+	}
+
+	.rvc01__photo--img {
+		object-fit: cover;
+		background: var(--color-bg-sunken);
+	}
+
+	.rvc01__identity {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		min-width: 0;
+	}
+
+	.rvc01__name {
+		font-size: var(--text-base);
+		font-weight: var(--weight-semibold);
+		line-height: var(--leading-snug);
+	}
+
+	.rvc01__role {
+		font-size: var(--text-sm);
+		line-height: var(--leading-snug);
+		color: var(--color-text-subtle);
+	}
+
+	@media (max-width: 47.999rem) {
+		.rvc01__head {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.rvc01__nav {
+			justify-content: flex-start;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		/* Le saut devient instantané. */
+		.rvc01__track {
+			scroll-behavior: auto;
+		}
+
+		.rvc01__btn {
+			transition-duration: 0.01ms !important;
+		}
+	}
+</style>
+
+<script>
+	function initRvc01() {
+		document.querySelectorAll("[data-rvc01]").forEach((root) => {
+			if (root.dataset.rvcReady === "true") return;
+			root.dataset.rvcReady = "true";
+
+			const track = root.querySelector("[data-rvc-track]");
+			const prev = root.querySelector("[data-rvc-prev]");
+			const next = root.querySelector("[data-rvc-next]");
+			if (!track || !prev || !next) return;
+
+			const comportement = () =>
+				window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+
+			// Un pas = largeur d'une carte + sa gouttière, LUE SUR LE RENDU et pas
+			// recopiée du CSS : si la carte rétrécit, le pas suit.
+			const pas = () => {
+				const item = track.querySelector(".rvc01__item");
+				if (!item) return track.clientWidth;
+				const gap = parseFloat(getComputedStyle(track).columnGap || "0") || 0;
+				return item.getBoundingClientRect().width + gap;
+			};
+
+			const bouger = (sens) => track.scrollBy({ left: sens * pas(), behavior: comportement() });
+
+			prev.addEventListener("click", () => bouger(-1));
+			next.addEventListener("click", () => bouger(1));
+
+			// Les flèches se désactivent aux deux bouts : un bouton qui ne fait
+			// rien sans le dire est un défaut.
+			const majEtat = () => {
+				const max = track.scrollWidth - track.clientWidth;
+				prev.disabled = track.scrollLeft <= 1;
+				next.disabled = track.scrollLeft >= max - 1;
+			};
+
+			track.addEventListener("scroll", majEtat, { passive: true });
+			window.addEventListener("resize", majEtat);
+			majEtat();
+		});
+	}
+
+	initRvc01();
+	document.addEventListener("astro:page-load", initRvc01);
+</script>

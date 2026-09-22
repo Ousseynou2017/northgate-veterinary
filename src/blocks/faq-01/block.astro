@@ -1,0 +1,390 @@
+---
+/**
+ * faq-01 — accordéon accessible
+ *
+ * <details>/<summary> natifs : ouverture au clavier, annonce de l'état par le
+ * lecteur d'écran, fonctionne sans JavaScript. Rien à réimplémenter en ARIA.
+ *
+ * L'attribut `name` rend l'accordéon exclusif (une seule réponse ouverte) sans
+ * une ligne de JS. Mets `exclusive={false}` si le client veut tout ouvrir.
+ */
+
+export interface FaqItem {
+	question: string;
+	/** Réponse en texte simple. Pour du HTML riche, utilise `answerHtml`. */
+	answer?: string;
+	answerHtml?: string;
+}
+
+import Frame from "../../local/frame.astro";
+
+export interface Props {
+	eyebrow?: string;
+	title?: string;
+	intro?: string;
+	items?: FaqItem[];
+	/** Une seule réponse ouverte à la fois. */
+	exclusive?: boolean;
+	/** Ouvre la première réponse au chargement. */
+	openFirst?: boolean;
+	/** Bouton sous la liste. `null` pour ne pas en poser. */
+	cta?: { label: string; href: string } | null;
+	tone?: "default" | "alt";
+	/**
+	 * Emplacement d'image, aux mesures du §2 de LAYOUT.md. Cadre VIDE tant
+	 * qu'aucune photo n'est choisie. `null` = le bloc rend exactement comme avant.
+	 */
+	media?: { width: number; height: number; radius: number; label: string; text: string; src?: string; alt?: string } | null;
+
+	headingLevel?: "h2" | "h3";
+	/** Émet le JSON-LD FAQPage. À ne laisser que si les réponses sont réelles. */
+	schema?: boolean;
+	/** Identifiant unique si plusieurs FAQ cohabitent. */
+	id?: string;
+}
+
+const {
+	eyebrow = "FREQUENTLY ASKED QUESTIONS",
+	title = "You might be wondering…",
+	intro,
+	items = [
+		{ question: "PLACEHOLDER — a question actually asked by clients?", answer: "PLACEHOLDER — answer provided by the client. An invented FAQ answers no one and corrupts the schema." },
+		{ question: "PLACEHOLDER — second question?", answer: "PLACEHOLDER — answer provided by the client." },
+		{ question: "PLACEHOLDER — third question?", answer: "PLACEHOLDER — answer provided by the client." },
+	],
+	exclusive = true,
+	openFirst = false,
+	cta = null,
+	tone = "default",
+	media = null,
+	headingLevel = "h2",
+	schema = false,
+	id = "faq01",
+} = Astro.props;
+
+const Heading = headingLevel;
+
+const faqLd =
+	schema && items.length > 0
+		? {
+				"@context": "https://schema.org",
+				"@type": "FAQPage",
+				mainEntity: items.map((it) => ({
+					"@type": "Question",
+					name: it.question,
+					acceptedAnswer: { "@type": "Answer", text: it.answerHtml ?? it.answer ?? "" },
+				})),
+			}
+		: null;
+---
+
+<section class={`faq01 faq01--${tone}`} id={id}>
+	<div class="faq01__inner">
+		<header class="faq01__head faq01__head--center">
+			{
+				eyebrow && (
+					<p class="ctc01__eyebrow">
+						<span class="ctc01__eyebrow-dot" aria-hidden="true" />
+						{eyebrow}
+					</p>
+				)
+			}
+			<Heading class="faq01__title">{title}</Heading>
+			{intro && <p class="faq01__intro">{intro}</p>}
+		</header>
+
+		<div class={`faq01__cols${media ? " faq01__cols--media" : ""}`}>
+			<div class="faq01__list">
+			{
+				items.map((it, i) => (
+					<details
+						class="faq01__item"
+						name={exclusive ? id : undefined}
+						open={openFirst && i === 0}
+					>
+						<summary class="faq01__q">
+							<span class="faq01__q-text">{it.question}</span>
+							<span class="faq01__sign" aria-hidden="true">
+								<span class="faq01__sign-bar" />
+								<span class="faq01__sign-bar" />
+							</span>
+						</summary>
+						<div class="faq01__a">
+							{it.answerHtml ? <div set:html={it.answerHtml} /> : <p>{it.answer}</p>}
+						</div>
+					</details>
+				))
+			}
+				{cta && (
+					<a class="faq01__cta" href={cta.href}>
+						{cta.label}
+					</a>
+				)}
+			</div>
+
+			{
+				media && (
+					<div class="faq01__media">
+						<Frame width={media.width} height={media.height} radius={media.radius} label={media.label} text={media.text} src={media.src} alt={media.alt} />
+					</div>
+				)
+			}
+		</div>
+	</div>
+
+	{faqLd && <script type="application/ld+json" set:html={JSON.stringify(faqLd)} />}
+</section>
+
+<style>
+	.faq01,
+	.faq01 *,
+	.faq01 *::before,
+	.faq01 *::after {
+		box-sizing: border-box;
+	}
+
+	.faq01 {
+		font-family: var(--brand-font-body);
+		background: var(--color-bg);
+		color: var(--color-text);
+		padding-block: var(--space-section);
+	}
+
+	.faq01--alt {
+		background: var(--color-bg-alt);
+	}
+
+	.faq01__inner {
+		max-width: var(--container);
+		margin-inline: auto;
+		padding-inline: var(--gutter);
+	}
+
+	.faq01__head {
+		max-width: var(--measure);
+		margin-bottom: var(--space-12);
+	}
+
+	.faq01__head--center {
+		max-width: var(--measure-heading);
+		margin-inline: auto;
+		text-align: center;
+	}
+
+	.faq01__head--center .ctc01__eyebrow {
+		justify-content: center;
+	}
+
+	.faq01__title {
+		margin: 0;
+		font-family: var(--brand-font-display);
+		font-size: var(--text-2xl);
+		font-weight: var(--weight-display);
+		line-height: var(--leading-heading);
+		letter-spacing: var(--tracking-heading);
+		text-wrap: balance;
+	}
+
+	.faq01__intro {
+		margin: var(--space-5) 0 0;
+		font-size: var(--text-md);
+		line-height: var(--leading-snug);
+		color: var(--color-text-muted);
+	}
+
+	/* ------------------------------------------------------------------- liste */
+	/* Colonne de lecture, pas pleine largeur : une question qui court sur
+	   1200px se lit mal. */
+
+	/* LAYOUT.md §2 section 13 : accordéon + illustration 250 × 250.
+	   Le §2 ne donne pas le côté : posée à droite, comme les deux autres
+	   illustrations (services détaillés et CTA), pour ne pas casser
+	   l'alternance des PHOTOS, qui est un rythme à part. */
+	.faq01__cols--media {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) 250px;
+		column-gap: var(--space-16);
+		align-items: start;
+	}
+
+	/* Panneau NON collant. Un média qui suit le défilement pendant qu'on ouvre
+	   des questions attire l'œil hors du texte qu'on vient d'ouvrir, et double
+	   le nombre d'éléments qui bougent à l'écran. `align-items: start` suffit à
+	   le tenir en haut de sa colonne. */
+	.faq01__cols--media .faq01__media {
+		align-self: start;
+	}
+
+	@media (max-width: 61.999rem) {
+		.faq01__cols--media {
+			grid-template-columns: minmax(0, 1fr);
+			row-gap: var(--space-10);
+		}
+
+		.faq01__cols--media .faq01__media {
+			position: static;
+			display: flex;
+			justify-content: center;
+		}
+	}
+
+	.faq01__list {
+		max-width: 48rem;
+		border-top: 1px solid var(--color-border);
+	}
+
+	.faq01__item {
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.faq01__q {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-6);
+		min-height: var(--tap-target);
+		padding-block: var(--space-5);
+		font-family: var(--brand-font-display);
+		font-size: var(--text-lg);
+		font-weight: var(--weight-display);
+		line-height: var(--leading-heading);
+		letter-spacing: var(--tracking-heading);
+		cursor: pointer;
+		list-style: none;
+		transition: color var(--dur-fast) var(--ease);
+	}
+
+	/* Le marqueur natif est retiré des deux façons possibles. */
+	.faq01__q::-webkit-details-marker {
+		display: none;
+	}
+
+	.faq01__q::marker {
+		content: "";
+	}
+
+	.faq01__q:hover {
+		color: var(--color-accent);
+	}
+
+	.faq01__item[open] > .faq01__q {
+		color: var(--color-accent);
+	}
+
+	.faq01__q-text {
+		flex: 1;
+	}
+
+	/* Le signe + qui devient − : une barre pivote et disparaît. Plus lisible
+	   qu'un chevron à cette taille, et ça dit « ouvrir / fermer ». */
+	.faq01__sign {
+		position: relative;
+		flex-shrink: 0;
+		display: grid;
+		place-items: center;
+		width: var(--space-10);
+		height: var(--space-10);
+		color: var(--color-accent);
+		background: var(--color-accent-soft);
+		border-radius: var(--radius-pill);
+		transition: background-color var(--dur) var(--ease);
+	}
+
+	.faq01__item[open] .faq01__sign {
+		color: var(--color-on-accent);
+		background: var(--color-accent);
+	}
+
+	.faq01__sign-bar {
+		position: absolute;
+		width: 14px;
+		height: 2px;
+		background: currentColor;
+		border-radius: var(--radius-pill);
+		transition: transform var(--dur) var(--ease);
+	}
+
+	.faq01__sign-bar:nth-child(2) {
+		transform: rotate(90deg);
+	}
+
+	.faq01__item[open] .faq01__sign-bar:nth-child(2) {
+		transform: rotate(0deg);
+	}
+
+	.faq01__a {
+		padding-bottom: var(--space-6);
+		padding-right: var(--space-16);
+		font-size: var(--text-base);
+		line-height: var(--leading-body);
+		color: var(--color-text-muted);
+	}
+
+	.faq01__a p {
+		margin: 0 0 var(--space-4);
+		max-width: var(--measure);
+	}
+
+	.faq01__a p:last-child {
+		margin-bottom: 0;
+	}
+
+	.faq01__a a {
+		color: var(--color-accent);
+		text-underline-offset: 0.2em;
+	}
+
+	.faq01__q:focus-visible {
+		outline: var(--focus-width) solid var(--color-focus);
+		outline-offset: calc(var(--focus-offset) * -1);
+		border-radius: var(--radius-xs);
+	}
+
+	/* Bouton sous la liste — FORMAT.md §13 : la référence en a un. Vert
+	   plein, texte blanc : 7,65:1. Ce n'est pas le bouton d'ACTION (ambre),
+	   c'est un bouton secondaire de section claire. */
+	.faq01__cta {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-height: var(--tap-target);
+		margin-top: var(--space-10);
+		padding: var(--space-3) var(--space-6);
+		font-size: var(--text-base);
+		font-weight: var(--weight-semibold);
+		line-height: 1;
+		text-decoration: none;
+		color: var(--color-on-accent);
+		background: var(--color-accent);
+		border-radius: var(--radius-pill);
+		transition: background-color var(--dur-fast) var(--ease);
+	}
+
+	.faq01__cta:hover {
+		background: var(--color-accent-hover);
+	}
+
+	.faq01 :focus-visible {
+		outline: var(--focus-width) solid var(--color-focus);
+		outline-offset: var(--focus-offset);
+	}
+
+	@media (max-width: 39.999rem) {
+		.faq01__q {
+			font-size: var(--text-base);
+			gap: var(--space-4);
+		}
+
+		.faq01__a {
+			padding-right: 0;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.faq01__q,
+		.faq01__sign,
+		.faq01__sign-bar {
+			transition-duration: 0.01ms !important;
+		}
+	}
+</style>

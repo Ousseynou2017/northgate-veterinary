@@ -1,0 +1,410 @@
+/* ============================================================================
+   _tokens.css — le système de design de agency/blocks/
+   ----------------------------------------------------------------------------
+   TOUTES les variables du système sont ici. Aucun bloc n'a le droit d'écrire
+   une couleur, une police, un espacement ou un rayon en dur.
+
+   À charger UNE FOIS par page, avant les blocs.
+
+   Trois couches, dans cet ordre :
+     1. LE REBRAND  — les 6 variables que tu changes chez chaque client.
+     2. LE DÉRIVÉ   — tout le reste, calculé à partir des 6. N'y touche pas.
+     3. L'INVARIANT — typo, espacement, mouvement. Identique partout, c'est
+                      ce qui fait qu'un site "tient" quelle que soit la marque.
+   ============================================================================ */
+
+/* ============================================================================
+   LES POLICES
+   ----------------------------------------------------------------------------
+   Auto-hébergées, licence SIL Open Font License 1.1, sous-ensemble latin
+   (il couvre tout le français : é è ê ë à â ç î ï ô ù û ü ÿ œ).
+   Fichiers dans _fonts/ — voir _fonts/README.md pour la source et la licence.
+
+   Les deux sont des polices VARIABLES : un seul fichier par famille couvre
+   toutes les graisses. 103 ko à deux, c'est le budget typographique complet
+   du site.
+
+   Pour changer de polices sur un projet : dépose les .woff2 dans _fonts/,
+   remplace les deux blocs @font-face ci-dessous et les deux variables
+   --brand-font-* plus bas. Rien d'autre.
+   ============================================================================ */
+
+@font-face {
+	font-family: "Newsreader";
+	src: url("/fonts/newsreader-latin.woff2") format("woff2");
+	font-weight: 200 800; /* variable, wght seulement */
+	font-display: swap;
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+	font-family: "Source Sans 3";
+	src: url("/fonts/source-sans-3-latin.woff2") format("woff2");
+	font-weight: 200 900; /* variable */
+	font-display: swap;
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+	/* ==========================================================================
+	   1. LE REBRAND — les 6 variables
+	   --------------------------------------------------------------------------
+	   Change ces six lignes et TOUT le site change. Rien d'autre à toucher.
+	   ========================================================================== */
+
+	/* La couleur de la marque. Boutons, liens, soulignés, accents.
+	   C'est la variable la plus visible du système. */
+	--brand-accent: #1b5e4a;
+
+	/* LA COULEUR D'ACTION — celle des boutons, et rien d'autre.
+	   Elle est DISTINCTE de --brand-accent : l'accent dit « c'est la marque »
+	   (filets, icônes, sur-titres, cartes peintes), l'action dit « clique ici ».
+	   Tant que les deux étaient la même couleur, un bouton ne se distinguait
+	   pas d'un aplat décoratif.
+	   >>> Une couleur d'action CLAIRE (ambre, jaune, lime) impose
+	   --color-on-action: var(--brand-ink). Du blanc dessus tombe sous 4,5:1 —
+	   mesuré ici : blanc sur #F2A03D = 2,13:1, encre sur #F2A03D = 8,40:1. */
+	--brand-action: #F2A03D;
+
+	/* L'encre : la couleur du texte principal, et la base de tous les gris.
+	   Ne prends jamais du noir pur (#000) : trop dur à l'écran, et ça donne
+	   des gris sans vie. Un noir légèrement teinté (bleu, brun) est meilleur. */
+	--brand-ink: #111917;
+
+	/* Le fond de page. Blanc, ou un blanc cassé si la marque le demande.
+	   Toute la gamme de gris est calculée entre cette couleur et l'encre. */
+	--brand-surface: #ffffff;
+
+	/* Le rayon de base. Toute l'échelle de rayons en découle.
+	   Mets 0 pour une marque anguleuse : tout le site devient anguleux,
+	   sans toucher à un seul bloc. */
+	--brand-radius: 1.5rem; /* 24px — PEAU §3 : cartes mesurées à 22–24px sur la référence */
+
+	/* Les deux polices.
+	   DISPLAY — Newsreader (Production Type, OFL 1.1) : un serif éditorial
+	   variable. PEAU §1 — l'axe `opsz` est volontairement ÉCARTÉ : il ferait
+	   passer le sous-ensemble latin de 56,7 à 128,9 ko, sur le chemin critique
+	   puisque cette police est préchargée. Elle ne sert qu'aux titres de 28 à
+	   64 px, le réglage optique ne paie pas les 72,2 ko.
+	   TEXTE — Source Sans 3 : dessinée pour l'interface et le texte long, grande
+	   hauteur d'x, formes non ambiguës. Elle ne se fait pas remarquer, et c'est
+	   exactement son travail.
+	   Toujours garder une pile de repli : la police peut ne pas charger. */
+	--brand-font-display: "Newsreader", Georgia, "Times New Roman", serif;
+	--brand-font-body: "Source Sans 3", ui-sans-serif, system-ui, "Segoe UI", Arial, sans-serif;
+
+	/* ==========================================================================
+	   2. LE DÉRIVÉ — calculé à partir des 6. Ne pas éditer à la main.
+	   --------------------------------------------------------------------------
+	   Tout est construit avec color-mix() : les gris sont des mélanges entre
+	   l'encre et le fond, donc ils restent cohérents avec la marque même si
+	   l'encre passe du bleu-noir au brun-noir.
+	   NOTE : color-mix() demande un navigateur récent (Chrome 111+, Safari 16.2+,
+	   Firefox 113+). Pas de repli prévu — c'est assumé, on est en 2026.
+	   ========================================================================== */
+
+	/* --- Texte ------------------------------------------------------------- */
+	--color-text: var(--brand-ink); /* titres, corps de texte */
+	--color-text-muted: color-mix(in oklab, var(--brand-ink) 72%, var(--brand-surface)); /* texte secondaire */
+	--color-text-subtle: color-mix(in oklab, var(--brand-ink) 58%, var(--brand-surface)); /* légendes, méta */
+
+	/* --- Fonds ------------------------------------------------------------- */
+	--color-bg: var(--brand-surface); /* fond par défaut */
+	/* PEAU §4 : posés EN DUR, volontairement. Ce sont des crèmes chaudes, pas des
+	   teintes de l'encre : un color-mix() avec --brand-ink (#111917, un vert-noir)
+	   donne des gris froids. #1b5e4a sur ces deux crèmes est mesuré à 7,03:1. */
+	--color-bg-alt: #fffcfa; /* section alternée, cartes */
+	--color-bg-sunken: #fff8f3; /* champs, zones creusées */
+	--color-bg-invert: var(--brand-ink); /* sections sombres : footer, CTA */
+
+	/* --- Traits ------------------------------------------------------------ */
+	--color-border: color-mix(in oklab, var(--brand-ink) 12%, var(--brand-surface)); /* filets discrets */
+	--color-border-strong: color-mix(in oklab, var(--brand-ink) 24%, var(--brand-surface)); /* champs, cartes */
+
+	/* --- Accent ------------------------------------------------------------ */
+	--color-accent: var(--brand-accent);
+	--color-accent-hover: color-mix(in oklab, var(--brand-accent) 82%, var(--brand-ink)); /* survol : on assombrit */
+	--color-accent-active: color-mix(in oklab, var(--brand-accent) 68%, var(--brand-ink)); /* clic enfoncé */
+	--color-accent-soft: color-mix(in oklab, var(--brand-accent) 9%, var(--brand-surface)); /* fond teinté */
+	--color-accent-line: color-mix(in oklab, var(--brand-accent) 28%, var(--brand-surface)); /* bordure teintée */
+
+	/* --- Action : les boutons ---------------------------------------------
+	   CONTRASTE, mesuré le 20/09 (voir reference/IMAGES.md) :
+	     encre sur ambre ............... 8,40:1  -> le texte passe largement
+	     ambre contre le crème ......... 2,08:1  -> l'APLAT ne suffit pas
+	     ambre contre le blanc ......... 2,13:1
+	     ambre contre l'encre .......... 8,40:1  -> l'aplat suffit sur fond sombre
+	     ambre contre le vert d'accent . 3,59:1  -> l'aplat suffit sur le header
+	   Sur fond clair, l'aplat seul laisse un bouton qui ne se détache pas de la
+	   page : c'est --color-action-border qui porte la frontière, et elle est
+	   choisie pour dépasser 3:1 sur TOUS les fonds clairs du système. */
+	--color-action: var(--brand-action);
+	--color-action-hover: #d98a25; /* encre dessus : 6,48:1 */
+	--color-action-active: #c97f20; /* encre dessus : 5,56:1 */
+	/* 7,03:1 sur le crème, 6,62:1 sur le blanc, 7,31:1 sur le sunken. */
+	--color-action-border: #7a4e12;
+	--color-on-action: var(--brand-ink);
+
+	/* Le texte POSÉ SUR l'accent. Par défaut le fond de page (clair).
+	   >>> Si la marque a un accent clair (jaune, cyan, lime), passe cette
+	   variable à var(--brand-ink), sinon le contraste tombe sous 4.5:1. */
+	--color-on-accent: var(--brand-surface);
+
+	/* --- Focus ------------------------------------------------------------- */
+	/* L'anneau de focus se dessine À L'EXTÉRIEUR de l'élément, donc sur le fond
+	   de PAGE : il doit contraster avec le fond, pas avec le bouton. */
+	--color-focus: var(--brand-ink);
+
+	/* --- Ombres ------------------------------------------------------------ */
+	/* Teintées à l'encre, jamais du noir pur : une ombre noire sur une marque
+	   chaude fait sale. Deux couches : un contact net + une diffusion large. */
+	--shadow-sm:
+		0 1px 2px color-mix(in oklab, var(--brand-ink) 7%, transparent),
+		0 2px 6px -2px color-mix(in oklab, var(--brand-ink) 8%, transparent);
+	--shadow-md:
+		0 1px 2px color-mix(in oklab, var(--brand-ink) 6%, transparent),
+		0 10px 24px -8px color-mix(in oklab, var(--brand-ink) 14%, transparent);
+	--shadow-lg:
+		0 2px 4px color-mix(in oklab, var(--brand-ink) 6%, transparent),
+		0 28px 56px -16px color-mix(in oklab, var(--brand-ink) 20%, transparent);
+
+	/* --- Rayons ------------------------------------------------------------ */
+	/* Proportionnels au rayon de marque : si --brand-radius vaut 0, tout est à 0. */
+	--radius-xs: calc(var(--brand-radius) * 0.4);
+	--radius-sm: calc(var(--brand-radius) * 0.7);
+	--radius-md: var(--brand-radius);
+	--radius-lg: calc(var(--brand-radius) * 1.5); /* 36px — PEAU §3 : images mesurées à 30–38px */
+	--radius-pill: 999px; /* volontairement absolu : une pastille reste une pastille */
+
+	/* ==========================================================================
+	   3. L'INVARIANT — la structure. Identique sur tous les projets.
+	   ========================================================================== */
+
+	/* --- Échelle typographique ---------------------------------------------
+	   Échelle modulaire fluide : chaque cran est un clamp(), le texte grandit
+	   avec la fenêtre sans point de rupture. Le rapport entre les crans
+	   s'élargit vers le haut (~1.25 en bas, ~1.4 en haut) : c'est ce qui donne
+	   un h1 qui domine vraiment le corps de texte au lieu d'être "un peu plus
+	   gros". Rapport h1/corps en grand écran : environ 4,7x.
+	   ----------------------------------------------------------------------- */
+	--text-2xs: clamp(0.6875rem, 0.67rem + 0.09vw, 0.75rem); /* 11 → 12 : sur-titres, mentions */
+	--text-xs: clamp(0.75rem, 0.72rem + 0.15vw, 0.8125rem); /* 12 → 13 : légendes, badges */
+	--text-sm: clamp(0.875rem, 0.85rem + 0.13vw, 0.9375rem); /* 14 → 15 : méta, liens de nav */
+	--text-base: clamp(1rem, 0.97rem + 0.16vw, 1.0625rem); /* 16 → 17 : corps de texte */
+	--text-md: clamp(1.125rem, 1.07rem + 0.28vw, 1.25rem); /* 18 → 20 : chapô, intro */
+	--text-lg: clamp(1.375rem, 1.24rem + 0.67vw, 1.75rem); /* 22 → 28 : titre de carte */
+	--text-xl: clamp(1.75rem, 1.48rem + 1.33vw, 2.5rem); /* 28 → 40 : h3 / h2 court */
+	--text-2xl: clamp(2rem, 1.6rem + 2vw, 3.125rem); /* 32 → 50 : h2 de section — PEAU §2 */
+	--text-3xl: clamp(2.5rem, 1.9rem + 3vw, 4rem); /* 40 → 64 : h1 de hero — PEAU §2 */
+
+	/* Interlignages. Un titre de 80px avec un interligne de 1.5 est illisible :
+	   plus le texte est gros, plus l'interligne se resserre. */
+	--leading-display: 1.18; /* h1, très gros titres — PEAU §2 : 75,52 / 64 */
+	--leading-heading: 1.25; /* h2, h3 — PEAU §2 : 62,5 / 50 */
+	--leading-snug: 1.35; /* chapô, texte large */
+	--leading-body: 1.65; /* corps de texte — c'est le confort de lecture */
+
+	/* Interlettrage. Négatif sur les gros titres (sinon ils "flottent"),
+	   fortement positif sur les sur-titres en capitales. */
+	--tracking-display: -0.045em; /* PEAU §2 : −2,88 / 64 */
+	--tracking-heading: -0.04em; /* PEAU §2 : −2,00 / 50 */
+	--tracking-normal: 0;
+	--tracking-eyebrow: 0.09em; /* sur-titres en MAJUSCULES */
+
+	--weight-body: 400;
+	--weight-medium: 500;
+	--weight-semibold: 600;
+	/* PEAU §2 : sur la référence, h1, h2, h3 et h4 sont tous à 500, jamais en
+	   gras. C'est le serif qui porte le poids visuel, pas la graisse. */
+	--weight-display: 500;
+
+	/* Longueur de ligne maximale pour du texte suivi : au-delà de ~70 signes,
+	   l'œil perd la ligne suivante. */
+	--measure: 68ch;
+	--measure-narrow: 46ch;
+	/* Largeur bornée pour un titre de section centré (Services, Reviews,
+	   Gallery, FAQ) : assez large pour un h2 sur deux lignes, assez étroit
+	   pour rester lisible une fois centré. */
+	--measure-heading: 46rem;
+
+	/* --- Échelle d'espacement ----------------------------------------------
+	   Une seule unité de base, tout en est un multiple. Pas un seul chiffre
+	   au hasard dans les blocs : si une valeur n'est pas dans cette liste,
+	   c'est qu'elle est fausse.
+	   ----------------------------------------------------------------------- */
+	--space-unit: 0.25rem; /* 4px — l'unité */
+
+	--space-1: calc(var(--space-unit) * 1); /* 4  */
+	--space-2: calc(var(--space-unit) * 2); /* 8  */
+	--space-3: calc(var(--space-unit) * 3); /* 12 */
+	--space-4: calc(var(--space-unit) * 4); /* 16 */
+	--space-5: calc(var(--space-unit) * 5); /* 20 */
+	--space-6: calc(var(--space-unit) * 6); /* 24 */
+	--space-8: calc(var(--space-unit) * 8); /* 32 */
+	--space-10: calc(var(--space-unit) * 10); /* 40 */
+	--space-12: calc(var(--space-unit) * 12); /* 48 */
+	--space-16: calc(var(--space-unit) * 16); /* 64 */
+	--space-20: calc(var(--space-unit) * 20); /* 80 */
+	--space-24: calc(var(--space-unit) * 24); /* 96 */
+	--space-32: calc(var(--space-unit) * 32); /* 128 */
+	--space-40: calc(var(--space-unit) * 40); /* 160 */
+
+	/* Le rythme vertical des sections. PEAU §5 : la référence est plus serrée,
+	   38 à 78px de padding par section. L'ancienne échelle donnait 115px à
+	   1440px, soit près du double : la page paraissait trouée. */
+	--space-section: clamp(var(--space-12), 5vw, var(--space-20)); /* 48 → 80 */
+	--space-section-lg: clamp(var(--space-16), 7vw, var(--space-24)); /* 64 → 96 */
+
+	/* --- Mise en page ------------------------------------------------------ */
+	--container: 75rem; /* 1200px — largeur utile */
+	--container-wide: 87.5rem; /* 1400px — galeries, sections larges */
+	--container-narrow: 42rem; /* 672px — texte suivi, articles */
+	--gutter: clamp(var(--space-5), 4vw, var(--space-10)); /* marge latérale : 20 → 40 */
+
+	/* Hauteur de l'en-tête, exposée pour que les autres blocs puissent
+	   compenser (ancres, hero plein écran, scroll-margin). */
+	--header-height: 6.4375rem; /* 103px — relevé sur la référence, LAYOUT.md §2 */
+
+	/* --- Mouvement ---------------------------------------------------------
+	   UNE seule courbe pour tout le site. Un site où chaque élément a son
+	   propre easing donne une impression de bricolage.
+	   Sortie franche, arrivée douce : ça répond vite au clic sans claquer.
+	   ----------------------------------------------------------------------- */
+	--ease: cubic-bezier(0.22, 0.61, 0.29, 1);
+	--dur-fast: 150ms; /* micro-états : couleur, opacité */
+	--dur: 200ms; /* défaut : survols, soulignés */
+	--dur-slow: 250ms; /* déplacements : panneaux, accordéons */
+
+	/* --- Focus -------------------------------------------------------------- */
+	--focus-width: 2px;
+	--focus-offset: 3px;
+
+	/* --- Cible tactile ------------------------------------------------------ */
+	--tap-target: 2.75rem; /* 44px — minimum WCAG, jamais en dessous */
+
+	/* --- Empilement --------------------------------------------------------- */
+	--z-base: 0;
+	--z-raised: 10;
+	--z-sticky: 100; /* en-tête collant */
+	--z-overlay: 200; /* voile du menu mobile */
+	--z-panel: 300; /* panneau du menu mobile */
+	--z-toast: 400;
+}
+
+/* ============================================================================
+   CIBLES D'ANCRE SOUS L'EN-TÊTE COLLANT
+   ----------------------------------------------------------------------------
+   L'en-tête est `position: sticky` : sans cette règle, un saut vers #book ou
+   #faq amène la cible à `top: 0`, donc SOUS l'en-tête, et ses premiers pixels
+   sont recouverts. Mesuré : en-tête réel 73px aux 4 largeurs (72px de contenu
+   + son filet de 1px, que --header-height ne compte pas), variable stable,
+   identique en mobile et en desktop.
+
+   72 + 16 = 88px, soit 15px de respiration sous l'en-tête.
+
+   Le repli dans var() n'est pas décoratif : une var() non définie ne « vaut
+   pas zéro », elle fait tomber la déclaration entière en silence. Si un projet
+   charge les blocs sans ce fichier, la règle tient quand même.
+
+   :where() garde la spécificité à 0 — n'importe quel bloc peut surcharger.
+   Posé sur tout élément porteur d'un id : les cibles d'ancre de cette page
+   sont tantôt des <section> de bloc (#faq, #book), tantôt des <div>
+   enveloppantes écrites dans la page (#about, #services), tantôt <main>
+   (#main-content, la cible du lien d'évitement).
+   ============================================================================ */
+:where([id]) {
+	scroll-margin-top: calc(var(--header-height, 4.5rem) + var(--space-4, 1rem));
+}
+
+/* ============================================================================
+   CONTEXTE SOMBRE
+   ----------------------------------------------------------------------------
+   Pose la classe .on-dark sur n'importe quel conteneur (footer, bandeau CTA,
+   hero sur photo) : les tokens sémantiques s'inversent, et TOUS les blocs à
+   l'intérieur suivent sans une ligne de CSS supplémentaire.
+
+   C'est ce qui permet d'utiliser le même bloc sur fond clair et sur fond
+   sombre sans écrire de variante.
+   ============================================================================ */
+
+.on-dark {
+	--color-text: var(--brand-surface);
+	--color-text-muted: color-mix(in oklab, var(--brand-surface) 76%, var(--brand-ink));
+	--color-text-subtle: color-mix(in oklab, var(--brand-surface) 58%, var(--brand-ink));
+
+	--color-bg: var(--brand-ink);
+	--color-bg-alt: color-mix(in oklab, var(--brand-surface) 6%, var(--brand-ink));
+	--color-bg-sunken: color-mix(in oklab, var(--brand-surface) 10%, var(--brand-ink));
+	--color-bg-invert: var(--brand-surface);
+
+	--color-border: color-mix(in oklab, var(--brand-surface) 16%, var(--brand-ink));
+	--color-border-strong: color-mix(in oklab, var(--brand-surface) 30%, var(--brand-ink));
+
+	/* Un accent conçu pour du blanc perd son contraste sur du noir : on
+	   l'éclaircit au lieu de l'assombrir. */
+	--color-accent: color-mix(in oklab, var(--brand-accent) 78%, var(--brand-surface));
+	--color-accent-hover: color-mix(in oklab, var(--brand-accent) 55%, var(--brand-surface));
+	--color-accent-active: color-mix(in oklab, var(--brand-accent) 40%, var(--brand-surface));
+	--color-accent-soft: color-mix(in oklab, var(--brand-accent) 22%, var(--brand-ink));
+	--color-accent-line: color-mix(in oklab, var(--brand-accent) 40%, var(--brand-ink));
+	--color-on-accent: var(--brand-ink);
+
+	/* Correctif contraste (ruban de mots-clés, bouton "Book a visit") :
+	   --color-accent sur --color-bg-invert mesure 3,92:1, sous le seuil de
+	   4,5:1 pour du texte. Cette variante mesure 6,72:1 sur le même fond.
+	   Ne remplace pas --color-accent partout (ça changerait tout le reste du
+	   site sur fond sombre) : à utiliser seulement là où le texte/bouton est
+	   directement posé sur un fond très sombre. */
+	--color-accent-loud: #7ca896;
+
+	/* Pastel posé SUR le vert de marque plein (#1b5e4a) : les étoiles du
+	   marqueur. Mesuré : 4,50:1 sur ce vert. --color-accent-loud n'y suffit
+	   PAS (2,88:1) — il est calibré pour l'encre, pas pour l'accent plein. */
+	--color-accent-pastel: #a8cfc0;
+
+	/* L'ambre tient 8,40:1 contre l'encre : l'aplat délimite le bouton tout
+	   seul, la bordure n'a plus de travail à faire et redevient l'ambre. Sur
+	   fond clair elle reste indispensable — c'est pourquoi elle est ici et pas
+	   supprimée. */
+	--color-action-border: var(--color-action);
+
+	/* Sur fond sombre, l'anneau de focus doit être clair. */
+	--color-focus: var(--brand-surface);
+
+	color: var(--color-text);
+	background-color: var(--color-bg);
+}
+
+/* ============================================================================
+   ÉTIQUETTE DE SECTION PARTAGÉE — .ctc01__eyebrow
+   ----------------------------------------------------------------------------
+   contact-01 définit déjà cette classe dans son propre <style> scoped (mesurée
+   4,59:1, ne pas toucher). Cette règle globale, non scoped, ne sert qu'aux
+   autres blocs (Services, About, How it works, Reviews, Gallery, FAQ) : ils
+   posent .ctc01__eyebrow dans leur markup au lieu de redéfinir un jeu de
+   règles par section. La règle scoped de contact-01 est plus spécifique
+   (attribut data-astro-cid en plus de la classe) : elle gagne toujours sur
+   celle-ci, donc contact-01 n'est jamais affecté par ce qui suit.
+   ============================================================================ */
+.ctc01__eyebrow {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	margin: 0 0 var(--space-5);
+	font-size: var(--text-2xs);
+	font-weight: var(--weight-semibold);
+	letter-spacing: var(--tracking-eyebrow);
+	text-transform: uppercase;
+	color: var(--color-text-subtle);
+}
+
+/* La pastille qui précède l'étiquette. Purement décorative : aria-hidden
+   posé côté HTML, elle ne doit jamais être annoncée par un lecteur d'écran. */
+.ctc01__eyebrow-dot {
+	display: block;
+	width: var(--space-2);
+	height: var(--space-2);
+	border-radius: var(--radius-pill);
+	background: var(--color-accent);
+	flex: none;
+}

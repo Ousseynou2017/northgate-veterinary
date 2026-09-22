@@ -1,0 +1,385 @@
+---
+/**
+ * hero-01 — hero plein écran, image de fond, titre + sous-titre + 1 bouton
+ *
+ * L'image est un <img> en couverture, pas un background CSS : elle garde un
+ * alt, des dimensions explicites, et peut être préchargée comme LCP.
+ * Sans image, le bloc rend un fond d'encre — il est utilisable tel quel.
+ */
+
+export interface Props {
+	eyebrow?: string;
+	title?: string;
+	subtitle?: string;
+	cta?: { label: string; href: string } | null;
+	ctaSecondary?: { label: string; href: string } | null;
+	imgSrc?: string;
+	imgAlt?: string;
+	imgWidth?: number;
+	imgHeight?: number;
+	/** Opacité du voile sur l'image. Monte-la si le texte manque de contraste.
+	 *  Le CSS impose un plancher à 0,65 via max() (5,52:1 pour du blanc, non
+	 *  négociable à la baisse) : cette prop peut monter au-delà, jamais descendre en dessous. */
+	overlay?: number;
+	/** `full` = 100svh moins l'en-tête. `tall` = plus court, laisse voir la suite. */
+	height?: "full" | "tall";
+	/** Ancre de défilement vers la section suivante. */
+	scrollHint?: boolean;
+}
+
+const {
+	eyebrow = "EYEBROW",
+	title = "The main headline of the page, in one clear sentence",
+	subtitle = "One or two sentences saying what the business does, for whom, and where. PLACEHOLDER — replace with the client's real pitch.",
+	cta = { label: "Request a quote", href: "/contact/" },
+	ctaSecondary = null,
+	imgSrc,
+	imgAlt = "",
+	imgWidth = 1920,
+	imgHeight = 1280,
+	overlay = 0.58,
+	height = "full",
+	scrollHint = false,
+} = Astro.props;
+---
+
+<section class={`hero01 on-dark hero01--${height}`} data-hero01>
+	{
+		imgSrc && (
+			<img
+				class="hero01__img"
+				src={imgSrc}
+				alt={imgAlt}
+				width={imgWidth}
+				height={imgHeight}
+				loading="eager"
+				fetchpriority="high"
+				decoding="async"
+			/>
+		)
+	}
+	<div class="hero01__veil" style={`--hero-overlay:${overlay}`}></div>
+
+	<div class="hero01__inner">
+		<div class="hero01__content">
+			{
+				eyebrow && (
+					<p class="hero01__eyebrow">
+						<span class="hero01__rule" aria-hidden="true" />
+						{eyebrow}
+					</p>
+				)
+			}
+			<h1 class="hero01__title">{title}</h1>
+			{subtitle && <p class="hero01__subtitle">{subtitle}</p>}
+			{
+				(cta || ctaSecondary) && (
+					<div class="hero01__actions">
+						{/* PEAU §7 : le libellé est dupliqué et glisse vers le haut au
+						    survol. Le second exemplaire porte aria-hidden, sinon un
+						    lecteur d'écran annonce le libellé deux fois. */}
+						{cta && (
+							<a class="hero01__btn" href={cta.href}>
+								<span class="hero01__btn-swap">
+									<span class="hero01__btn-face">{cta.label}</span>
+									<span class="hero01__btn-face hero01__btn-face--ghost" aria-hidden="true">
+										{cta.label}
+									</span>
+								</span>
+							</a>
+						)}
+						{ctaSecondary && (
+							<a class="hero01__btn hero01__btn--ghost" href={ctaSecondary.href}>
+								<span class="hero01__btn-swap">
+									<span class="hero01__btn-face">{ctaSecondary.label}</span>
+									<span class="hero01__btn-face hero01__btn-face--ghost" aria-hidden="true">
+										{ctaSecondary.label}
+									</span>
+								</span>
+							</a>
+						)}
+					</div>
+				)
+			}
+		</div>
+	</div>
+
+	{
+		scrollHint && (
+			<span class="hero01__hint" aria-hidden="true">
+				<span class="hero01__hint-line" />
+			</span>
+		)
+	}
+</section>
+
+<style>
+	.hero01,
+	.hero01 *,
+	.hero01 *::before,
+	.hero01 *::after {
+		box-sizing: border-box;
+	}
+
+	.hero01 {
+		position: relative;
+		display: flex;
+		align-items: center;
+		overflow: hidden;
+		font-family: var(--brand-font-body);
+		/* Fond d'encre : le bloc reste correct sans image. */
+		background: var(--brand-ink);
+		isolation: isolate;
+	}
+
+	.hero01--full {
+		min-height: calc(100svh - var(--header-height));
+		padding-block: var(--space-24);
+	}
+
+	.hero01--tall {
+		min-height: 34rem;
+		padding-block: var(--space-section-lg);
+	}
+
+	.hero01__img {
+		position: absolute;
+		inset: 0;
+		z-index: -2;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+	}
+
+	/* Voile : un aplat, pas un dégradé. Un dégradé laisse le haut de l'image
+	   presque nu, et le sous-titre/titre y tombent sous 4,5:1 (mesuré 2,22:1
+	   et 3,34:1). L'aplat à 65% garantit 5,52:1 pour du texte blanc même sur
+	   une photo entièrement blanche — plancher non négociable, imposé par
+	   max() même si --hero-overlay est passé plus bas par une page. Structure
+	   du bloc : reste en place quand le placeholder devient une vraie photo. */
+	.hero01__veil {
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		pointer-events: none;
+		background: color-mix(in oklab, var(--brand-ink) calc(max(var(--hero-overlay, 0.58), 0.65) * 100%), transparent);
+	}
+
+	.hero01__inner {
+		width: 100%;
+		max-width: var(--container);
+		margin-inline: auto;
+		padding-inline: var(--gutter);
+	}
+
+	.hero01__content {
+		max-width: 46rem;
+	}
+
+	.hero01__eyebrow {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		margin: 0 0 var(--space-5);
+		font-size: var(--text-2xs);
+		font-weight: var(--weight-semibold);
+		letter-spacing: var(--tracking-eyebrow);
+		text-transform: uppercase;
+		color: var(--color-text-muted);
+	}
+
+	/* Le filet du sur-titre : le repère qui marque le début d'une section
+	   dans toute la bibliothèque. */
+	.hero01__rule {
+		display: block;
+		width: var(--space-8);
+		height: 2px;
+		background: var(--color-accent);
+		border-radius: var(--radius-pill);
+	}
+
+	.hero01__title {
+		margin: 0;
+		font-family: var(--brand-font-display);
+		font-size: var(--text-3xl);
+		font-weight: var(--weight-display);
+		line-height: var(--leading-display);
+		letter-spacing: var(--tracking-display);
+		text-wrap: balance;
+		color: var(--color-text);
+	}
+
+	/* Blanc pur, et pas --color-text-muted : sur le voile du hero, le gris clair
+	   mesure 3,69:1 dans son pire cas (fond le plus clair de l'image sous le
+	   voile), sous le seuil de 4,5:1 pour du texte de 20px. Le sous-titre est
+	   le seul texte du bloc à tomber : le titre passe grâce à sa taille. */
+	.hero01__subtitle {
+		max-width: var(--measure);
+		margin: var(--space-6) 0 0;
+		font-size: var(--text-md);
+		line-height: var(--leading-snug);
+		color: #ffffff;
+	}
+
+	.hero01__actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-4);
+		margin-top: var(--space-10);
+	}
+
+	.hero01__btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-height: var(--tap-target); /* 44px — PEAU §7 : hauteur 40 à 48 */
+		padding: var(--space-3) var(--space-6); /* 24px de part et d'autre — PEAU §7 */
+		font-size: var(--text-base);
+		font-weight: var(--weight-semibold);
+		line-height: 1;
+		color: var(--color-on-action);
+		text-decoration: none;
+		/* --color-accent face à --color-on-accent sur ce fond très sombre
+		   mesure 3,92:1 : sous le seuil. --color-accent-loud (6,72:1) est le
+		   token dédié à ce cas. */
+		background: var(--color-action);
+		border: 1px solid transparent;
+		border-radius: var(--radius-pill); /* pilule pleine — PEAU §7 */
+		transition:
+			background-color var(--dur-fast) var(--ease),
+			transform var(--dur-fast) var(--ease),
+			box-shadow var(--dur-fast) var(--ease),
+			border-color var(--dur-fast) var(--ease),
+			color var(--dur-fast) var(--ease);
+	}
+
+	.hero01__btn:hover {
+		background: var(--color-action-hover);
+		box-shadow: var(--shadow-md);
+		transform: translateY(-1px);
+	}
+
+	.hero01__btn:active {
+		background: var(--color-action-active);
+		box-shadow: none;
+		transform: translateY(0);
+	}
+
+	.hero01__btn--ghost {
+		color: var(--color-text);
+		background: transparent;
+		border-color: var(--color-border-strong);
+	}
+
+	/* Le libellé qui glisse (PEAU §7). La fenêtre est haute d'une ligne et
+	   masque ce qui dépasse ; le duplicata attend sous le bord bas. */
+	.hero01__btn-swap {
+		position: relative;
+		display: block;
+		height: 1.25em;
+		overflow: hidden;
+	}
+
+	.hero01__btn-face {
+		display: block;
+		height: 1.25em;
+		line-height: 1.25em;
+		transition: transform var(--dur-slow) var(--ease);
+	}
+
+	.hero01__btn-face--ghost {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		transform: translateY(100%);
+	}
+
+	.hero01__btn:hover .hero01__btn-face,
+	.hero01__btn:focus-visible .hero01__btn-face {
+		transform: translateY(-100%);
+	}
+
+	.hero01__btn:hover .hero01__btn-face--ghost,
+	.hero01__btn:focus-visible .hero01__btn-face--ghost {
+		transform: translateY(0);
+	}
+
+	.hero01__btn--ghost:hover {
+		color: var(--color-text);
+		background: var(--color-bg-sunken);
+		border-color: var(--color-text);
+		box-shadow: none;
+	}
+
+	.hero01 :focus-visible {
+		outline: var(--focus-width) solid var(--color-focus);
+		outline-offset: var(--focus-offset);
+	}
+
+	/* Indice de défilement : un trait qui descend en boucle. Discret, et coupé
+	   par prefers-reduced-motion. */
+	.hero01__hint {
+		position: absolute;
+		bottom: var(--space-8);
+		left: 50%;
+		translate: -50% 0;
+		display: block;
+		width: 1px;
+		height: var(--space-12);
+		overflow: hidden;
+		background: color-mix(in oklab, var(--color-text) 25%, transparent);
+	}
+
+	.hero01__hint-line {
+		display: block;
+		width: 100%;
+		height: 40%;
+		background: var(--color-accent);
+		animation: hero01-hint 1.9s var(--ease) infinite;
+	}
+
+	@keyframes hero01-hint {
+		0% {
+			transform: translateY(-100%);
+		}
+		100% {
+			transform: translateY(250%);
+		}
+	}
+
+	@media (max-width: 47.999rem) {
+		.hero01--full {
+			min-height: calc(100svh - var(--header-height));
+			padding-block: var(--space-16);
+		}
+
+		.hero01__btn {
+			width: 100%;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.hero01__btn,
+		.hero01__hint-line {
+			transition-duration: 0.01ms !important;
+			animation: none !important;
+		}
+
+		/* Le libellé qui glisse est neutralisé, pas accéléré : le duplicata
+		   sort du DOM visuel et le libellé restant ne bouge plus. */
+		.hero01__btn-face--ghost {
+			display: none;
+		}
+
+		.hero01__btn-face {
+			transition: none !important;
+		}
+
+		.hero01__btn:hover .hero01__btn-face,
+		.hero01__btn:focus-visible .hero01__btn-face {
+			transform: none;
+		}
+	}
+</style>

@@ -1,0 +1,110 @@
+---
+/**
+ * frame.astro — cadre d'image VIDE, aux dimensions et au rayon du relevé.
+ *
+ * LOCAL AU PROJET. Étapes 3 et 4 de LAYOUT.md : on pose les emplacements
+ * d'image aux mesures du §2, sans aucun fichier photo. Le cadre est
+ * volontairement en pointillé et porte son libellé : personne ne doit le
+ * confondre avec une image livrée.
+ *
+ * Il remplace l'image dans les blocs du projet qui n'en avaient pas. Quand les
+ * photos arriveront (étape 7), c'est ce composant qui devient un <img>.
+ *
+ * `width` et `height` sont les dimensions MESURÉES sur la référence : elles
+ * donnent le rapport de forme et le plafond de largeur. Le cadre se rétrécit
+ * en dessous, il ne s'étire jamais au-dessus.
+ */
+
+export interface Props {
+	width: number;
+	height: number;
+	/**
+	 * Image à poser dans le cadre. Absente, le cadre reste vide et en
+	 * pointillé. Présente, le cadre devient un <img> aux mêmes dimensions.
+	 * Tant que le chemin pointe dans _TEMPORAIRE-A-REMPLACER/, le contrôle de
+	 * build refuse toute version publiable (scripts/verifie-images-temporaires.mjs).
+	 */
+	src?: string;
+	alt?: string;
+	/**
+	 * `lazy` par défaut. À passer en `eager` dans un conteneur qui défile
+	 * HORIZONTALEMENT : le chargement différé se calcule sur la proximité de la
+	 * fenêtre, et une vignette poussée hors champ par un transform ou un
+	 * défilement latéral n'est jamais jugée proche. Mesuré : 24 images sur 32
+	 * ne chargeaient jamais.
+	 */
+	loading?: "lazy" | "eager";
+	/** Rayon mesuré, en pixels. Chaque section de la référence a le sien. */
+	radius: number;
+	/** Ce qu'un lecteur d'écran annonce. */
+	label: string;
+	/** Ce qui est écrit dans le cadre. */
+	text: string;
+	class?: string;
+}
+
+const { width, height, radius, label, text, src, alt = "", loading = "lazy", class: extra = "" } = Astro.props;
+---
+
+{
+	src ? (
+		<img
+			class={`frm frm--img ${extra}`}
+			src={src}
+			alt={alt}
+			width={width}
+			height={height}
+			loading={loading}
+			decoding="async"
+			style={`--frm-w:${width}px; --frm-ratio:${width} / ${height}; --frm-radius:${radius}px`}
+		/>
+	) : (
+		<div
+			class={`frm ${extra}`}
+			role="img"
+			aria-label={label}
+			style={`--frm-w:${width}px; --frm-ratio:${width} / ${height}; --frm-radius:${radius}px`}
+		>
+			<span class="frm__label">{text}</span>
+		</div>
+	)
+}
+
+<style>
+	.frm {
+		display: grid;
+		place-items: center;
+		box-sizing: border-box;
+		/* width:100% + plafond : le cadre remplit sa piste et s'arrête à sa
+		   dimension mesurée. Les porte-cadres NE DOIVENT PAS utiliser
+		   `justify-self` — un parent en shrink-to-fit fait dimensionner cet
+		   enfant en max-content et le fait déborder (530px mesurés dans une
+		   piste de 320). Ils alignent en flex, ce qui garde le parent étiré. */
+		width: 100%;
+		max-width: var(--frm-w);
+		aspect-ratio: var(--frm-ratio);
+		padding: var(--space-4);
+		text-align: center;
+		background: var(--color-bg-sunken);
+		border: 1px dashed var(--color-border-strong);
+		border-radius: var(--frm-radius);
+	}
+
+	/* Avec une image : mêmes dimensions, même rayon, plus de pointillé.
+	   object-fit: cover — c'est le rapport de forme du relevé qui commande le
+	   recadrage, jamais l'inverse. */
+	.frm--img {
+		display: block;
+		padding: 0;
+		object-fit: cover;
+		background: var(--color-bg-sunken);
+		border: 0;
+	}
+
+	.frm__label {
+		font-size: var(--text-xs);
+		font-weight: var(--weight-semibold);
+		letter-spacing: var(--tracking-eyebrow);
+		color: var(--color-text-muted);
+	}
+</style>

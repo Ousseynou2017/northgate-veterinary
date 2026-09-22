@@ -1,0 +1,16 @@
+{
+  "name": "northgate-veterinary",
+  "private": true,
+  "type": "module",
+  "description": "Northgate Veterinary — concept piece portfolio, built from blocs-astro/blocks/.",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build && node scripts/verifie-images-temporaires.mjs",
+    "preview": "astro preview",
+    "verifie:images": "node scripts/verifie-images-temporaires.mjs"
+  },
+  "dependencies": {
+    "astro": "^5.13.3",
+    "playwright": "^1.63.0"
+  }
+}

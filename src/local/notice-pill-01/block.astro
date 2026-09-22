@@ -1,0 +1,138 @@
+---
+/**
+ * notice-pill-01 — la pastille d'information, seule sur sa ligne.
+ *
+ * BLOC LOCAL AU PROJET. Composition relevée sur la référence, FORMAT.md §14 :
+ * une pastille de 650 × 85 px, rayon 20, centrée sous la FAQ. Une phrase, et
+ * — relevé le 21/09 sur le DOM, la première lecture l'avait manqué — un
+ * BOUTON à droite de la phrase, dans la pastille. Pas de titre, pas d'image.
+ *
+ * Il REMPLACE l'usage de banner-01 à cet endroit. banner-01 pose une section
+ * pleine largeur avec titre, sous-titre, bouton et image de fond : c'est un
+ * autre objet, et c'est ce qui avait été posé ici par erreur. banner-01 reste
+ * en bibliothèque, intact.
+ *
+ * Ne remonte pas en bibliothèque : une pastille de dimensions relevées sur un
+ * site précis n'est pas un composant générique.
+ *
+ * 650 est un PLAFOND, pas une largeur fixe : sous cette taille la pastille se
+ * rétrécit et sa hauteur s'ouvre, sinon la phrase déborde à 360 px.
+ */
+
+export interface Props {
+	/** La phrase. Une seule — la référence n'en a qu'une, de 14 mots. */
+	text: string;
+	/** Le bouton posé dans la pastille, à droite de la phrase. */
+	cta?: { label: string; href: string } | null;
+	/** Largeur maximale, en px. Le relevé donne 650. */
+	width?: number;
+	/** Hauteur minimale, en px. Le relevé donne 85. */
+	height?: number;
+	/** Rayon, en px. Le relevé donne 20. */
+	radius?: number;
+	tone?: "accent" | "ink";
+}
+
+const { text, cta = null, width = 650, height = 85, radius = 20, tone = "accent" } = Astro.props;
+---
+
+<section class={`ntc01 ntc01--${tone}`}>
+	<div
+		class="ntc01__pill on-dark"
+		style={`--ntc-w:${width}px; --ntc-h:${height}px; --ntc-r:${radius}px`}
+	>
+		<p class="ntc01__text">{text}</p>
+		{
+			cta && (
+				<a class="ntc01__btn" href={cta.href}>
+					{cta.label}
+				</a>
+			)
+		}
+	</div>
+</section>
+
+<style>
+	.ntc01,
+	.ntc01 *,
+	.ntc01 *::before,
+	.ntc01 *::after {
+		box-sizing: border-box;
+	}
+
+	.ntc01 {
+		font-family: var(--brand-font-body);
+		background: var(--color-bg);
+		padding-block: var(--space-section);
+		padding-inline: var(--gutter);
+	}
+
+	.ntc01__pill {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-5);
+		width: 100%;
+		max-width: var(--ntc-w, 650px);
+		min-height: var(--ntc-h, 85px);
+		margin: 0 auto;
+		padding: var(--space-5) var(--space-8);
+		font-size: var(--text-sm); /* 15 px au relevé */
+		line-height: var(--leading-snug);
+		text-align: center;
+		text-wrap: balance;
+		border-radius: var(--ntc-r, 20px);
+	}
+
+	/* `on-dark` est posée sur la pastille elle-même : le texte passe en clair
+	   sans qu'on écrive une couleur ici. Le fond, lui, est reposé — `on-dark`
+	   met --color-bg à l'encre, et la variante accent veut le vert. */
+	.ntc01__pill {
+		color: var(--color-text);
+	}
+
+	.ntc01--accent .ntc01__pill {
+		background: var(--brand-accent);
+	}
+
+	.ntc01--ink .ntc01__pill {
+		background: var(--brand-ink);
+	}
+
+	.ntc01__text {
+		margin: 0;
+	}
+
+	/* Le bouton est ambre sur l'aplat vert : c'est l'action principale, et
+	   c'est ce qui le détache de la pastille. Sur fond peint, `on-dark`
+	   ramène la bordure d'action à l'ambre — l'aplat suffit. */
+	.ntc01__btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		flex: none;
+		min-height: var(--tap-target);
+		padding: var(--space-3) var(--space-6);
+		font-size: var(--text-base);
+		font-weight: var(--weight-semibold);
+		line-height: 1;
+		color: var(--color-on-action);
+		text-decoration: none;
+		white-space: nowrap;
+		background: var(--color-action);
+		border: 1.5px solid var(--color-action-border);
+		border-radius: var(--radius-pill);
+		transition: background-color var(--dur-fast) var(--ease);
+	}
+
+	.ntc01__btn:hover {
+		background: var(--color-action-hover);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.ntc01__btn {
+			transition: none;
+		}
+	}
+</style>

@@ -1,0 +1,18 @@
+# Dépendances et sorties de build
+node_modules/
+dist/
+.astro/
+
+# Cache des originaux téléchargés par scripts/fabrique-images.mjs : les
+# fichiers Pexels en pleine définition. Ils se retéléchargent en une commande,
+# ils n'ont rien à faire dans l'historique d'un dépôt public.
+.cache-images/
+
+# Secrets
+.env
+.env.*
+!.env.local.example
+
+# Système
+Thumbs.db
+.DS_Store

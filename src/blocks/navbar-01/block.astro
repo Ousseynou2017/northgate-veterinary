@@ -1,0 +1,1058 @@
+---
+/**
+ * navbar-01 — barre de navigation principale
+ *
+ * Logo à gauche, liens à droite, CTA optionnel, burger sous 992px.
+ * Sous-menus déroulants au survol (souris) et au clic/clavier.
+ *
+ * Un seul jeu de liens dans le DOM : le <nav> devient le panneau mobile.
+ * Pas de duplication desktop/mobile — c'est ce qui fait qu'un audit de styles
+ * ou un test d'accessibilité ne voit jamais deux fois le même lien.
+ *
+ * Voir README.md pour les props et les pièges.
+ */
+
+export interface NavChild {
+	label: string;
+	href: string;
+}
+
+export interface NavLink {
+	label: string;
+	href?: string;
+	children?: NavChild[];
+}
+
+export interface Props {
+	/** Texte du logo. Ignoré si logoSrc est fourni. */
+	logoText?: string;
+	/** Image de logo. Doit être déjà optimisée et dimensionnée. */
+	logoSrc?: string;
+	/**
+	 * Logo INLINE (balisage SVG brut). Prioritaire sur logoSrc et logoText.
+	 * Pourquoi cette prop existe : un SVG servi par `<img src>` est un
+	 * document isolé — `currentColor` y retombe sur le noir, donc un logo
+	 * posé sur un en-tête peint devient invisible. Inliné, il hérite de la
+	 * couleur du texte de l'en-tête et suit `on-dark` sans variante.
+	 */
+	logoHtml?: string;
+	logoAlt?: string;
+	logoWidth?: number;
+	logoHeight?: number;
+	logoHref?: string;
+	/** Les liens. Un lien avec `children` devient un sous-menu. */
+	links?: NavLink[];
+	/** Bouton d'action à droite. Passe `null` pour le retirer. */
+	cta?: { label: string; href: string } | null;
+	/** En-tête collant en haut de page. */
+	sticky?: boolean;
+	/** Cible du lien d'évitement. Doit exister dans la page. */
+	skipTarget?: string;
+	/** Nom accessible de la navigation (utile si la page a plusieurs <nav>). */
+	navLabel?: string;
+	/** Texte du lien d'évitement. */
+	skipLabel?: string;
+	/** aria-label du bouton burger, panneau fermé. */
+	menuOpenLabel?: string;
+	/** aria-label du bouton burger, panneau ouvert. */
+	menuCloseLabel?: string;
+	/**
+	 * Fond de l'en-tête. `default` = fond de page.
+	 * `ink` et `accent` peignent l'en-tête et basculent TOUT son contenu dans
+	 * le jeu de tokens inversé (`.on-dark`) : logo, liens, burger et panneau
+	 * mobile passent en clair d'un coup, sans variante à écrire.
+	 */
+	tone?: "default" | "ink" | "accent";
+}
+
+const {
+	logoText = "CLIENT NAME",
+	logoSrc,
+	logoHtml,
+	logoAlt = "",
+	logoWidth = 160,
+	logoHeight = 32,
+	logoHref = "/",
+	links = [
+		{ label: "Home", href: "/" },
+		{
+			label: "Services",
+			children: [
+				{ label: "Service one", href: "/prestations/une/" },
+				{ label: "Service two", href: "/prestations/deux/" },
+				{ label: "Service three", href: "/prestations/trois/" },
+			],
+		},
+		{ label: "Projects", href: "/realisations/" },
+		{ label: "About", href: "/a-propos/" },
+		{ label: "Contact", href: "/contact/" },
+	],
+	cta = { label: "Request a quote", href: "/contact/" },
+	sticky = true,
+	skipTarget = "#main-content",
+	navLabel = "Main navigation",
+	skipLabel = "Skip to main content",
+	menuOpenLabel = "Open menu",
+	menuCloseLabel = "Close menu",
+	tone = "default",
+} = Astro.props;
+
+// Marque le lien de la page courante. Astro.url n'existe pas au build statique
+// dans tous les contextes : on retombe silencieusement sur "aucun lien actif".
+const currentPath = Astro.url?.pathname ?? "";
+const isCurrent = (href?: string) => !!href && href !== "/" && currentPath.startsWith(href);
+---
+
+<a class="nav01-skip" href={skipTarget}>{skipLabel}</a>
+
+<header class={`nav01 nav01--${tone}${tone === "default" ? "" : " on-dark"}`} data-nav01 data-sticky={sticky ? "true" : "false"}>
+	<div class="nav01__inner">
+		<a class="nav01__logo" href={logoHref} aria-label={logoHtml ? logoAlt || logoText : undefined}>
+			{
+				logoHtml ? (
+					<span class="nav01__logo-svg" set:html={logoHtml} />
+				) : logoSrc ? (
+					<img src={logoSrc} alt={logoAlt} width={logoWidth} height={logoHeight} />
+				) : (
+					<span class="nav01__logo-text">{logoText}</span>
+				)
+			}
+		</a>
+
+		<nav class="nav01__nav" id="nav01-nav" aria-label={navLabel} data-nav-panel>
+			<ul class="nav01__list">
+				{
+					links.map((link, i) =>
+						link.children?.length ? (
+							<li class="nav01__item nav01__item--sub" data-nav-sub>
+								<button
+									type="button"
+									class="nav01__link nav01__link--toggle"
+									aria-expanded="false"
+									aria-controls={`nav01-sub-${i}`}
+									data-nav-sub-toggle
+								>
+									<span class="nav01__label">{link.label}</span>
+									<svg class="nav01__chevron" viewBox="0 0 10 6" width="10" height="6" aria-hidden="true" focusable="false">
+										<path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+									</svg>
+								</button>
+								<div class="nav01__sub-wrap" id={`nav01-sub-${i}`}>
+									<ul class="nav01__sub">
+										{link.children.map((child) => (
+											<li>
+												<a
+													class="nav01__sublink"
+													href={child.href}
+													aria-current={isCurrent(child.href) ? "page" : undefined}
+												>
+													{child.label}
+												</a>
+											</li>
+										))}
+									</ul>
+								</div>
+							</li>
+						) : (
+							<li class="nav01__item">
+								<a
+									class="nav01__link"
+									href={link.href}
+									aria-current={isCurrent(link.href) ? "page" : undefined}
+								>
+									<span class="nav01__label">{link.label}</span>
+								</a>
+							</li>
+						)
+					)
+				}
+			</ul>
+
+			{
+				cta && (
+					<a class="nav01__cta" href={cta.href}>
+						{/* PEAU §7 : le libellé est dupliqué et glisse vers le haut au
+						    survol. Le second exemplaire est aria-hidden — sans ça, un
+						    lecteur d'écran annonce le libellé deux fois. */}
+						<span class="nav01__cta-swap">
+							<span class="nav01__cta-face">{cta.label}</span>
+							<span class="nav01__cta-face nav01__cta-face--ghost" aria-hidden="true">
+								{cta.label}
+							</span>
+						</span>
+					</a>
+				)
+			}
+		</nav>
+
+		<button
+			type="button"
+			class="nav01__burger"
+			aria-expanded="false"
+			aria-controls="nav01-nav"
+			aria-label={menuOpenLabel}
+			data-nav-burger
+		>
+			<span class="nav01__burger-box" aria-hidden="true">
+				<span class="nav01__burger-bar"></span>
+				<span class="nav01__burger-bar"></span>
+			</span>
+		</button>
+	</div>
+</header>
+
+<div class="nav01__scrim" data-nav-scrim></div>
+
+<style>
+	/* Le bloc pose son propre box-sizing sur son propre sous-arbre :
+	   il reste autonome, il ne dépend d'aucun reset global. */
+	.nav01,
+	.nav01 *,
+	.nav01 *::before,
+	.nav01 *::after,
+	.nav01-skip,
+	.nav01__scrim {
+		box-sizing: border-box;
+	}
+
+	/* ---------------------------------------------------------------- skip */
+
+	.nav01-skip {
+		position: fixed;
+		top: var(--space-3);
+		left: var(--space-3);
+		z-index: var(--z-toast);
+		padding: var(--space-3) var(--space-5);
+		font-family: var(--brand-font-body);
+		font-size: var(--text-sm);
+		font-weight: var(--weight-medium);
+		color: var(--color-on-accent);
+		background: var(--color-accent);
+		border-radius: var(--radius-sm);
+		text-decoration: none;
+		/* Hors écran tant qu'il n'a pas le focus, mais toujours focusable. */
+		transform: translateY(calc(-100% - var(--space-4)));
+		transition: transform var(--dur) var(--ease);
+	}
+
+	.nav01-skip:focus-visible {
+		transform: translateY(0);
+		outline: var(--focus-width) solid var(--color-focus);
+		outline-offset: var(--focus-offset);
+	}
+
+	/* -------------------------------------------------------------- header */
+
+	.nav01 {
+		position: relative;
+		z-index: var(--z-sticky);
+		font-family: var(--brand-font-body);
+		background: var(--color-bg);
+		/* Le filet n'apparaît qu'au scroll : au repos l'en-tête se fond dans
+		   le hero, ce qui évite la barre grise posée sur l'image. */
+		border-bottom: 1px solid transparent;
+		transition:
+			border-color var(--dur) var(--ease),
+			box-shadow var(--dur) var(--ease);
+	}
+
+	/* Les deux fonds peints. La classe `on-dark`, posée en même temps sur le
+	   <header>, bascule tous les tokens ; ici on ne fait que reposer le fond,
+	   parce qu'elle met --color-bg à l'encre et que la variante accent veut du
+	   vert.
+	   `.nav01.nav01--x` et NON `.nav01--x` seul : `.on-dark` est une classe
+	   unique, donc de même spécificité, et c'est alors l'ordre des feuilles qui
+	   tranche — mesuré : le fond retombait à l'encre quand la variante
+	   demandait le vert. Deux classes, le doute disparaît. */
+	.nav01.nav01--ink {
+		background: var(--brand-ink);
+	}
+
+	.nav01.nav01--accent {
+		background: var(--brand-accent);
+	}
+
+	/* MESURÉ : --color-text-muted sur le vert de l'en-tête rend 4,23:1, sous le
+	   seuil de 4,5 pour du texte de 16 px. Sur un en-tête peint, le lien de
+	   navigation reprend la couleur de texte pleine — 7,65:1. Atténuer un lien
+	   de navigation principale n'avait de sens que sur fond de page. */
+	.nav01--ink .nav01__link,
+	.nav01--accent .nav01__link {
+		color: var(--color-text);
+	}
+
+	/* La hauteur relevée sur la référence est 103 px, FILET COMPRIS. Le filet
+	   est porté par le <header> et la hauteur par .nav01__inner : sans ce
+	   retrait d'un pixel, le rendu mesure 104. */
+	.nav01--ink .nav01__inner,
+	.nav01--accent .nav01__inner {
+		min-height: calc(var(--header-height) - 1px);
+	}
+
+	.nav01[data-sticky="true"] {
+		position: sticky;
+		top: 0;
+	}
+
+	.nav01[data-scrolled="true"] {
+		border-bottom-color: var(--color-border);
+		box-shadow: var(--shadow-sm);
+	}
+
+	.nav01__inner {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-6);
+		width: 100%;
+		max-width: var(--container);
+		min-height: var(--header-height);
+		margin-inline: auto;
+		padding-inline: var(--gutter);
+	}
+
+	/* ---------------------------------------------------------------- logo */
+
+	.nav01__logo {
+		display: inline-flex;
+		align-items: center;
+		flex-shrink: 0;
+		/* Le texte du logo fait ~23px de haut : sous le minimum de cible
+		   tactile. On étire la zone cliquable sans déplacer le texte. */
+		min-height: var(--tap-target);
+		color: var(--color-text);
+		text-decoration: none;
+		border-radius: var(--radius-xs);
+	}
+
+	.nav01__logo img {
+		display: block;
+		height: auto;
+		max-width: 100%;
+	}
+
+	/* Le SVG inliné porte son viewBox : on ne fixe QUE la hauteur, la largeur
+	   suit. Une largeur fixe ici écraserait le lockup. */
+	.nav01__logo-svg {
+		display: block;
+		line-height: 0;
+	}
+
+	.nav01__logo-svg :global(svg) {
+		display: block;
+		width: auto;
+		height: 46px;
+	}
+
+	@media (max-width: 47.999rem) {
+		.nav01__logo-svg :global(svg) {
+			height: 38px;
+		}
+	}
+
+	.nav01__logo-text {
+		font-family: var(--brand-font-display);
+		font-size: var(--text-md);
+		font-weight: var(--weight-display);
+		letter-spacing: var(--tracking-heading);
+		line-height: var(--leading-heading);
+	}
+
+	.nav01__logo:hover .nav01__logo-text {
+		color: var(--color-accent);
+	}
+
+	.nav01__logo-text {
+		transition: color var(--dur-fast) var(--ease);
+	}
+
+	/* ----------------------------------------------------------------- nav */
+
+	.nav01__nav {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+	}
+
+	.nav01__list {
+		display: flex;
+		align-items: center;
+		gap: var(--space-1);
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.nav01__item {
+		position: relative;
+	}
+
+	/* --------------------------------------------------------------- liens */
+
+	.nav01__link {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-2) var(--space-3);
+		font-family: inherit;
+		font-size: var(--text-base); /* PEAU §2 : lien de nav mesuré à 16px */
+		font-weight: var(--weight-medium);
+		line-height: var(--leading-snug);
+		color: var(--color-text-muted);
+		text-decoration: none;
+		background: none;
+		border: 0;
+		border-radius: var(--radius-xs);
+		cursor: pointer;
+		transition: color var(--dur-fast) var(--ease);
+	}
+
+	/* Le souligné : un trait qui se déploie depuis la gauche.
+	   Pas un changement d'opacité — un geste. */
+	.nav01__label {
+		position: relative;
+		display: inline-block;
+	}
+
+	.nav01__label::after {
+		content: "";
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: -0.35em;
+		height: 2px;
+		background: var(--color-accent);
+		border-radius: var(--radius-pill);
+		transform: scaleX(0);
+		transform-origin: left center;
+		transition: transform var(--dur) var(--ease);
+	}
+
+	.nav01__link:hover {
+		color: var(--color-text);
+	}
+
+	.nav01__link:hover .nav01__label::after,
+	.nav01__link[aria-expanded="true"] .nav01__label::after {
+		transform: scaleX(1);
+	}
+
+	.nav01__link[aria-current="page"] {
+		color: var(--color-text);
+	}
+
+	.nav01__link[aria-current="page"] .nav01__label::after {
+		transform: scaleX(1);
+		background: var(--color-accent);
+	}
+
+	.nav01__link:active {
+		color: var(--color-accent-active);
+	}
+
+	.nav01__chevron {
+		flex-shrink: 0;
+		transition: transform var(--dur) var(--ease);
+	}
+
+	.nav01__link[aria-expanded="true"] .nav01__chevron {
+		transform: rotate(180deg);
+	}
+
+	/* ----------------------------------------------------------- sous-menu */
+
+	.nav01__sub-wrap {
+		position: absolute;
+		top: calc(100% + var(--space-2));
+		left: calc(var(--space-3) * -1);
+		min-width: 14rem;
+		padding: var(--space-2);
+		background: var(--color-bg);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		box-shadow: var(--shadow-md);
+		/* Fermé : invisible, hors du flux d'interaction, légèrement remonté. */
+		opacity: 0;
+		visibility: hidden;
+		transform: translateY(-4px);
+		pointer-events: none;
+		transition:
+			opacity var(--dur) var(--ease),
+			transform var(--dur) var(--ease),
+			visibility 0s linear var(--dur);
+	}
+
+	.nav01__item--sub[data-open="true"] .nav01__sub-wrap {
+		opacity: 1;
+		visibility: visible;
+		transform: translateY(0);
+		pointer-events: auto;
+		transition-delay: 0s;
+	}
+
+	.nav01__sub {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.nav01__sublink {
+		display: block;
+		padding: var(--space-3) var(--space-4);
+		font-size: var(--text-sm);
+		font-weight: var(--weight-medium);
+		line-height: var(--leading-snug);
+		color: var(--color-text-muted);
+		text-decoration: none;
+		border-radius: var(--radius-sm);
+		transition:
+			color var(--dur-fast) var(--ease),
+			background-color var(--dur-fast) var(--ease);
+	}
+
+	.nav01__sublink:hover {
+		color: var(--color-accent);
+		background: var(--color-accent-soft);
+	}
+
+	.nav01__sublink[aria-current="page"] {
+		color: var(--color-accent);
+		background: var(--color-accent-soft);
+	}
+
+	/* ----------------------------------------------------------------- CTA */
+
+	.nav01__cta {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-height: var(--tap-target); /* 44px — PEAU §7 : hauteur 40 à 48 */
+		margin-left: var(--space-3);
+		padding: var(--space-3) var(--space-6); /* 24px de part et d'autre — PEAU §7 */
+		font-size: var(--text-sm);
+		font-weight: var(--weight-semibold);
+		line-height: 1;
+		color: var(--color-on-action);
+		text-decoration: none;
+		white-space: nowrap;
+		background: var(--color-action);
+		border-radius: var(--radius-pill); /* pilule pleine — PEAU §7 */
+		box-shadow: var(--shadow-sm);
+		transition:
+			background-color var(--dur-fast) var(--ease),
+			transform var(--dur-fast) var(--ease),
+			box-shadow var(--dur-fast) var(--ease);
+		/* L'aplat ambre ne fait que 2,08:1 contre le creme : c'est cette
+		   bordure qui delimite le bouton sur fond clair (7,03:1). Sur fond
+		   sombre le scope .on-dark la ramene a l'ambre, l'aplat suffit. */
+		border: 1.5px solid var(--color-action-border);
+	
+	}
+
+	.nav01__cta:hover {
+		background: var(--color-action-hover);
+		box-shadow: var(--shadow-md);
+		transform: translateY(-1px);
+	}
+
+	.nav01__cta:active {
+		background: var(--color-action-active);
+		box-shadow: var(--shadow-sm);
+		transform: translateY(0);
+	}
+
+	/* Le libellé qui glisse (PEAU §7). La fenêtre est haute d'une ligne et
+	   masque ce qui dépasse ; le duplicata attend sous le bord bas. */
+	.nav01__cta-swap {
+		position: relative;
+		display: block;
+		height: 1.25em;
+		overflow: hidden;
+	}
+
+	.nav01__cta-face {
+		display: block;
+		height: 1.25em;
+		line-height: 1.25em;
+		transition: transform var(--dur-slow) var(--ease);
+	}
+
+	.nav01__cta-face--ghost {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		transform: translateY(100%);
+	}
+
+	.nav01__cta:hover .nav01__cta-face,
+	.nav01__cta:focus-visible .nav01__cta-face {
+		transform: translateY(-100%);
+	}
+
+	.nav01__cta:hover .nav01__cta-face--ghost,
+	.nav01__cta:focus-visible .nav01__cta-face--ghost {
+		transform: translateY(0);
+	}
+
+	/* --------------------------------------------------------------- focus */
+
+	.nav01 :focus-visible {
+		outline: var(--focus-width) solid var(--color-focus);
+		outline-offset: var(--focus-offset);
+	}
+
+	/* -------------------------------------------------------------- burger */
+
+	.nav01__burger {
+		display: none;
+		align-items: center;
+		justify-content: center;
+		width: var(--tap-target);
+		height: var(--tap-target);
+		margin-right: calc(var(--space-2) * -1);
+		color: var(--color-text);
+		background: none;
+		border: 0;
+		border-radius: var(--radius-sm);
+		cursor: pointer;
+		transition: background-color var(--dur-fast) var(--ease);
+	}
+
+	.nav01__burger:hover {
+		background: var(--color-bg-sunken);
+	}
+
+	.nav01__burger-box {
+		position: relative;
+		display: block;
+		width: 20px;
+		height: 12px;
+	}
+
+	.nav01__burger-bar {
+		position: absolute;
+		left: 0;
+		width: 100%;
+		height: 2px;
+		background: currentColor;
+		border-radius: var(--radius-pill);
+		transition:
+			transform var(--dur-slow) var(--ease),
+			width var(--dur-slow) var(--ease);
+	}
+
+	.nav01__burger-bar:nth-child(1) {
+		top: 0;
+	}
+
+	.nav01__burger-bar:nth-child(2) {
+		bottom: 0;
+		width: 70%;
+	}
+
+	/* Ouvert : les deux barres se croisent. La barre courte s'allonge en
+	   même temps qu'elle pivote — c'est ce détail qui rend le geste net. */
+	.nav01__burger[aria-expanded="true"] .nav01__burger-bar:nth-child(1) {
+		transform: translateY(5px) rotate(45deg);
+	}
+
+	.nav01__burger[aria-expanded="true"] .nav01__burger-bar:nth-child(2) {
+		width: 100%;
+		transform: translateY(-5px) rotate(-45deg);
+	}
+
+	/* ---------------------------------------------------------------- voile */
+
+	.nav01__scrim {
+		position: fixed;
+		inset: 0;
+		z-index: var(--z-overlay);
+		background: color-mix(in oklab, var(--brand-ink) 55%, transparent);
+		opacity: 0;
+		visibility: hidden;
+		transition:
+			opacity var(--dur-slow) var(--ease),
+			visibility 0s linear var(--dur-slow);
+	}
+
+	.nav01__scrim[data-open="true"] {
+		opacity: 1;
+		visibility: visible;
+		transition-delay: 0s;
+	}
+
+	/* ============================================================ ≤ 991px */
+	/* Le point de rupture est la seule valeur en dur du bloc : une media
+	   query ne peut pas lire une custom property. 62rem = 992px. */
+
+	@media (max-width: 61.999rem) {
+		/* PIÈGE D'EMPILEMENT — à ne pas défaire.
+		   Le panneau est un ENFANT du <header>, donc son z-index est résolu
+		   DANS le contexte d'empilement du header. Tant que le header reste à
+		   --z-sticky (100), aucun z-index interne ne peut passer au-dessus du
+		   voile, qui est un FRÈRE du header à --z-overlay (200) : le voile
+		   grise le panneau, et surtout il intercepte les clics sur le burger
+		   et sur le CTA. Le menu devient impossible à fermer.
+		   On monte donc le header entier au-dessus du voile. */
+		.nav01 {
+			z-index: var(--z-panel);
+		}
+
+		.nav01__burger {
+			display: inline-flex;
+		}
+
+		/* Le panneau est un frère du burger DANS le header : sans z-index, il
+		   se peint par-dessus, le X devient invisible et le clic sur le burger
+		   atterrit sur le panneau — le menu ne peut plus se fermer.
+		   Le logo est remonté pour la même raison sur les écrans très étroits,
+		   où le panneau à 88vw vient mordre dessus. */
+		.nav01__burger,
+		.nav01__logo {
+			position: relative;
+			z-index: calc(var(--z-panel) + 1);
+		}
+
+		/* Verrou de défilement. Volontairement DANS la media query mobile :
+		   si un état JS restait collé après un redimensionnement, la règle
+		   cesse d'exister au-dessus de 992px et la page redevient scrollable
+		   toute seule. Un verrou posé en style inline, lui, survit à tout. */
+		:global(html.nav01-locked),
+		:global(html.nav01-locked body) {
+			overflow: hidden;
+		}
+
+		.nav01__nav {
+			position: fixed;
+			top: 0;
+			right: 0;
+			z-index: var(--z-panel);
+			display: flex;
+			flex-direction: column;
+			align-items: stretch;
+			justify-content: flex-start;
+			gap: 0;
+			width: min(22rem, 88vw);
+			height: 100dvh;
+			padding: calc(var(--header-height) + var(--space-6)) var(--gutter) var(--space-10);
+			overflow-y: auto;
+			overscroll-behavior: contain;
+			background: var(--color-bg);
+			border-left: 1px solid var(--color-border);
+			box-shadow: var(--shadow-lg);
+			transform: translateX(100%);
+			visibility: hidden;
+			transition:
+				transform var(--dur-slow) var(--ease),
+				visibility 0s linear var(--dur-slow);
+		}
+
+		.nav01__nav[data-open="true"] {
+			transform: translateX(0);
+			visibility: visible;
+			transition-delay: 0s;
+		}
+
+		.nav01__list {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 0;
+		}
+
+		.nav01__item {
+			border-bottom: 1px solid var(--color-border);
+		}
+
+		.nav01__link {
+			justify-content: space-between;
+			width: 100%;
+			min-height: var(--tap-target);
+			padding: var(--space-4) 0;
+			font-size: var(--text-md);
+		}
+
+		/* En panneau, le souligné coulissant n'a plus de sens : le doigt n'a
+		   pas d'état de survol. On passe à un décalage du texte. */
+		.nav01__label::after {
+			display: none;
+		}
+
+		.nav01__link[aria-current="page"] {
+			color: var(--color-accent);
+		}
+
+		/* Sous-menu en accordéon : 0fr → 1fr est animable, contrairement à
+		   height: auto. */
+		.nav01__sub-wrap {
+			position: static;
+			display: grid;
+			grid-template-rows: 0fr;
+			min-width: 0;
+			padding: 0;
+			background: none;
+			border: 0;
+			border-radius: 0;
+			box-shadow: none;
+			opacity: 1;
+			/* `inherit` et non `visible` : un enfant qui force `visible` reste
+			   peint même quand son parent est `hidden`. Le panneau fermé
+			   laisserait alors traîner ses sous-menus hors de l'écran. */
+			visibility: inherit;
+			transform: none;
+			pointer-events: auto;
+			transition: grid-template-rows var(--dur-slow) var(--ease);
+		}
+
+		.nav01__item--sub[data-open="true"] .nav01__sub-wrap {
+			grid-template-rows: 1fr;
+		}
+
+		.nav01__sub {
+			overflow: hidden;
+			min-height: 0;
+			padding-bottom: var(--space-2);
+		}
+
+		.nav01__sublink {
+			padding: var(--space-3) var(--space-4);
+			font-size: var(--text-base);
+		}
+
+		.nav01__cta {
+			width: 100%;
+			margin-left: 0;
+			margin-top: var(--space-8);
+			padding: var(--space-4) var(--space-6);
+			font-size: var(--text-base);
+		}
+	}
+
+	/* =========================================================== ≥ 992px */
+
+	@media (min-width: 62rem) {
+		/* Sur desktop le panneau n'existe pas : on neutralise tout état
+		   laissé par un redimensionnement depuis le mobile. */
+		.nav01__nav {
+			transform: none;
+			visibility: visible;
+		}
+
+		/* Filet de sécurité : même si le JS n'a pas tourné (événement de
+		   redimensionnement non émis, script en erreur), le voile ne peut
+		   pas recouvrir une page desktop. */
+		.nav01__scrim {
+			display: none;
+		}
+	}
+
+	/* ------------------------------------------------- mouvement réduit */
+
+	@media (prefers-reduced-motion: reduce) {
+		.nav01-skip,
+		.nav01,
+		.nav01__link,
+		.nav01__label::after,
+		.nav01__chevron,
+		.nav01__sub-wrap,
+		.nav01__sublink,
+		.nav01__cta,
+		.nav01__burger,
+		.nav01__burger-bar,
+		.nav01__nav,
+		.nav01__scrim,
+		.nav01__logo-text {
+			transition-duration: 0.01ms !important;
+		}
+
+		/* Le libellé qui glisse est neutralisé, pas accéléré : le duplicata
+		   sort du DOM visuel et le libellé restant ne bouge plus. */
+		.nav01__cta-face--ghost {
+			display: none;
+		}
+
+		.nav01__cta-face {
+			transition: none !important;
+		}
+
+		.nav01__cta:hover .nav01__cta-face,
+		.nav01__cta:focus-visible .nav01__cta-face {
+			transform: none;
+		}
+	}
+</style>
+
+<script define:vars={{ menuOpenLabel, menuCloseLabel }}>
+	function initNav01() {
+		document.querySelectorAll("[data-nav01]").forEach((root) => {
+			if (root.dataset.navReady === "true") return;
+			root.dataset.navReady = "true";
+
+			const panel = root.querySelector("[data-nav-panel]");
+			const burger = root.querySelector("[data-nav-burger]");
+			const scrim = root.parentElement?.querySelector("[data-nav-scrim]") ?? null;
+			const subs = Array.from(root.querySelectorAll("[data-nav-sub]"));
+			if (!panel || !burger) return;
+
+			const mqDesktop = window.matchMedia("(min-width: 62rem)");
+			const FOCUSABLE = 'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
+			/* ---------------------------------------------------- sous-menus */
+
+			const closeSub = (sub) => {
+				sub.dataset.open = "false";
+				sub.querySelector("[data-nav-sub-toggle]")?.setAttribute("aria-expanded", "false");
+			};
+
+			const openSub = (sub) => {
+				subs.forEach((other) => other !== sub && closeSub(other));
+				sub.dataset.open = "true";
+				sub.querySelector("[data-nav-sub-toggle]")?.setAttribute("aria-expanded", "true");
+			};
+
+			subs.forEach((sub) => {
+				const toggle = sub.querySelector("[data-nav-sub-toggle]");
+				if (!toggle) return;
+
+				toggle.addEventListener("click", () => {
+					sub.dataset.open === "true" ? closeSub(sub) : openSub(sub);
+				});
+
+				// Survol : desktop uniquement. Sur tactile, un pointerenter
+				// suivi d'un clic ouvrirait puis refermerait aussitôt.
+				sub.addEventListener("pointerenter", (e) => {
+					if (mqDesktop.matches && e.pointerType === "mouse") openSub(sub);
+				});
+				sub.addEventListener("pointerleave", (e) => {
+					if (mqDesktop.matches && e.pointerType === "mouse") closeSub(sub);
+				});
+
+				// Le focus qui sort du sous-menu le referme (navigation au clavier).
+				sub.addEventListener("focusout", (e) => {
+					if (!mqDesktop.matches) return;
+					if (!sub.contains(e.relatedTarget)) closeSub(sub);
+				});
+			});
+
+			/* -------------------------------------------------- panneau mobile */
+
+			let lastFocus = null;
+
+			const isOpen = () => panel.dataset.open === "true";
+
+			const setPanel = (open) => {
+				panel.dataset.open = open ? "true" : "false";
+				burger.setAttribute("aria-expanded", open ? "true" : "false");
+				burger.setAttribute("aria-label", open ? menuCloseLabel : menuOpenLabel);
+				if (scrim) scrim.dataset.open = open ? "true" : "false";
+				document.documentElement.classList.toggle("nav01-locked", open);
+
+				if (open) {
+					lastFocus = document.activeElement;
+					panel.removeAttribute("inert");
+					panel.querySelector(FOCUSABLE)?.focus();
+				} else {
+					subs.forEach(closeSub);
+					// inert retire tout le panneau de l'ordre de tabulation :
+					// pas besoin de gérer chaque élément à la main.
+					if (!mqDesktop.matches) panel.setAttribute("inert", "");
+					lastFocus?.focus();
+					lastFocus = null;
+				}
+			};
+
+			burger.addEventListener("click", () => setPanel(!isOpen()));
+			scrim?.addEventListener("click", () => isOpen() && setPanel(false));
+
+			// Un lien cliqué dans le panneau ferme le panneau (ancres internes).
+			panel.addEventListener("click", (e) => {
+				const link = e.target.closest?.("a");
+				if (link && isOpen()) setPanel(false);
+			});
+
+			/* ------------------------------------------------------- clavier */
+
+			document.addEventListener("keydown", (e) => {
+				if (e.key !== "Escape") return;
+				const openSubMenu = subs.find((s) => s.dataset.open === "true");
+				if (openSubMenu) {
+					closeSub(openSubMenu);
+					openSubMenu.querySelector("[data-nav-sub-toggle]")?.focus();
+					return;
+				}
+				if (isOpen()) setPanel(false);
+			});
+
+			// Piège à focus : tant que le panneau est ouvert, Tab tourne dedans.
+			panel.addEventListener("keydown", (e) => {
+				if (e.key !== "Tab" || !isOpen() || mqDesktop.matches) return;
+				const items = Array.from(panel.querySelectorAll(FOCUSABLE)).filter(
+					(el) => el.offsetParent !== null
+				);
+				if (items.length === 0) return;
+				const first = items[0];
+				const last = items[items.length - 1];
+				if (e.shiftKey && document.activeElement === first) {
+					e.preventDefault();
+					last.focus();
+				} else if (!e.shiftKey && document.activeElement === last) {
+					e.preventDefault();
+					first.focus();
+				}
+			});
+
+			// Clic hors du menu : referme les sous-menus ouverts.
+			document.addEventListener("click", (e) => {
+				if (root.contains(e.target)) return;
+				subs.forEach(closeSub);
+			});
+
+			/* ------------------------------------------------ bascule de mode */
+
+			const syncMode = () => {
+				if (mqDesktop.matches) {
+					// On repasse en desktop : on nettoie tout état mobile,
+					// sinon le menu reste bloqué ouvert ou inerte.
+					panel.removeAttribute("inert");
+					if (isOpen()) setPanel(false);
+					panel.dataset.open = "false";
+					document.documentElement.classList.remove("nav01-locked");
+					if (scrim) scrim.dataset.open = "false";
+					subs.forEach(closeSub);
+				} else if (!isOpen()) {
+					panel.setAttribute("inert", "");
+				}
+			};
+
+			// Deux déclencheurs : certains navigateurs et certaines rotations
+			// n'émettent que l'un des deux.
+			mqDesktop.addEventListener("change", syncMode);
+			window.addEventListener("resize", syncMode);
+			syncMode();
+
+			/* ----------------------------------------------------- état scroll */
+
+			if (root.dataset.sticky === "true") {
+				let ticking = false;
+				const onScroll = () => {
+					if (ticking) return;
+					ticking = true;
+					requestAnimationFrame(() => {
+						root.dataset.scrolled = window.scrollY > 8 ? "true" : "false";
+						ticking = false;
+					});
+				};
+				window.addEventListener("scroll", onScroll, { passive: true });
+				onScroll();
+			}
+		});
+	}
+
+	initNav01();
+	// Compatible avec les View Transitions si le projet les active.
+	document.addEventListener("astro:page-load", initNav01);
+</script>

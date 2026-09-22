@@ -1,0 +1,275 @@
+---
+/**
+ * process-01 — étapes numérotées
+ *
+ * Trois ou quatre étapes d'une prise en charge, dans l'ordre. Ici la
+ * numérotation encode vraiment une séquence : l'étape 2 vient après la 1.
+ * Si l'ordre n'a pas d'importance, c'est services-01 qu'il faut, pas ce bloc.
+ *
+ * Le trait de liaison entre les étapes est décoratif. Au-dessus de 62rem il
+ * déborde de 40px à droite pour rejoindre l'étape suivante ; sous 62rem, où
+ * les étapes s'empilent, il RESTE et se cadre sur la largeur de l'étape
+ * (`right: 0`) : il devient le filet de tête de chaque étape.
+ * Mesuré le 20/09 à 375, 768 et 992px : affiché, 1px, sur toute la largeur.
+ * L'en-tête a longtemps affirmé qu'il disparaissait — c'était faux.
+ *
+ * Aucun JavaScript. La numérotation est écrite dans le HTML, pas générée par
+ * un compteur CSS : un lecteur d'écran doit l'entendre.
+ */
+
+export interface Step {
+	/** Numéro affiché. Écrit à la main pour rester lisible par un lecteur d'écran. */
+	number: string;
+	title: string;
+	text: string;
+}
+
+import Frame from "../../local/frame.astro";
+
+export interface Props {
+	eyebrow?: string;
+	title?: string;
+	steps?: Step[];
+	/** `alt` fond clair teinté · `dark` bandeau sombre · `default` fond de page. */
+	tone?: "default" | "alt" | "dark";
+	/**
+	 * Emplacement d'image, aux mesures du §2 de LAYOUT.md. Cadre VIDE tant
+	 * qu'aucune photo n'est choisie. `null` = pas d'emplacement, le bloc rend
+	 * exactement comme avant.
+	 */
+	media?: { width: number; height: number; radius: number; label: string; text: string; src?: string; alt?: string } | null;
+
+	headingLevel?: "h2" | "h3";
+}
+
+const {
+	eyebrow,
+	title,
+	steps = [
+		{ number: "01", title: "PLACEHOLDER — STEP 1", text: "PLACEHOLDER — WHAT HAPPENS AT THIS STEP" },
+		{ number: "02", title: "PLACEHOLDER — STEP 2", text: "PLACEHOLDER — WHAT HAPPENS AT THIS STEP" },
+		{ number: "03", title: "PLACEHOLDER — STEP 3", text: "PLACEHOLDER — WHAT HAPPENS AT THIS STEP" },
+	],
+	tone = "default",
+	media = null,
+	headingLevel = "h2",
+} = Astro.props;
+
+const Heading = headingLevel;
+const isDark = tone === "dark";
+---
+
+<section class={`prc01 prc01--${tone} ${isDark ? "on-dark" : ""}`}>
+	<div class="prc01__inner">
+		{
+			(eyebrow || title) && (
+				<header class="prc01__head">
+					{eyebrow && (
+						<p class="ctc01__eyebrow">
+							<span class="ctc01__eyebrow-dot" aria-hidden="true" />
+							{eyebrow}
+						</p>
+					)}
+					{title && <Heading class="prc01__title">{title}</Heading>}
+				</header>
+			)
+		}
+
+		<div class={`prc01__cols${media ? " prc01__cols--media" : ""}`}>
+			{
+				media && (
+					<div class="prc01__media">
+						<Frame width={media.width} height={media.height} radius={media.radius} label={media.label} text={media.text} src={media.src} alt={media.alt} />
+					</div>
+				)
+			}
+
+			<ol class="prc01__list" style={`--prc-count:${media ? 1 : steps.length}`}>
+			{
+				steps.map((s) => (
+					<li class="prc01__item">
+						<p class="prc01__num">{s.number}</p>
+						<h3 class="prc01__step-title">{s.title}</h3>
+						<p class="prc01__text">{s.text}</p>
+					</li>
+				))
+			}
+			</ol>
+		</div>
+	</div>
+</section>
+
+<style>
+	.prc01,
+	.prc01 *,
+	.prc01 *::before,
+	.prc01 *::after {
+		box-sizing: border-box;
+		min-width: 0;
+	}
+
+	.prc01 {
+		font-family: var(--brand-font-body);
+		background: var(--color-bg);
+		color: var(--color-text);
+		padding-block: var(--space-section);
+	}
+
+	.prc01--alt {
+		background: var(--color-bg-alt);
+	}
+
+	.prc01--dark {
+		background: var(--brand-ink);
+	}
+
+	.prc01__inner {
+		max-width: var(--container);
+		margin-inline: auto;
+		padding-inline: var(--gutter);
+	}
+
+	.prc01__head {
+		max-width: var(--measure);
+		margin-bottom: var(--space-12);
+	}
+
+	.prc01__title {
+		margin: 0;
+		font-family: var(--brand-font-display);
+		font-size: var(--text-2xl);
+		font-weight: var(--weight-display);
+		letter-spacing: var(--tracking-display);
+		line-height: var(--leading-heading);
+		color: var(--color-text);
+	}
+
+	/* -------------------------------------------------------------- la liste */
+
+	/* LAYOUT.md §2 section 10 : image à GAUCHE 570 × 398, trois étapes à droite
+	   dans une colonne de 452. La gouttière mesurée entre les deux est de 128.
+	   570 + 128 + 452 = 1150, soit la largeur de contenu de la référence. */
+	.prc01__cols--media {
+		display: grid;
+		grid-template-columns: minmax(0, 570fr) minmax(0, 452fr);
+		column-gap: 128px;
+		align-items: start;
+	}
+
+	/* Empilées dans une colonne étroite, les étapes gardent leur filet de tête :
+	   c'est le même rendu que sous 62rem, décrit dans l'en-tête du bloc. */
+	.prc01__cols--media .prc01__list {
+		grid-template-columns: minmax(0, 1fr);
+		gap: var(--space-8);
+	}
+
+	.prc01__cols--media .prc01__item::before {
+		right: 0;
+	}
+
+	.prc01__list {
+		display: grid;
+		/* minmax(0,1fr) : sans lui un mot long élargit la colonne au-delà de l'écran. */
+		grid-template-columns: repeat(var(--prc-count, 3), minmax(0, 1fr));
+		gap: var(--space-10);
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		counter-reset: none;
+	}
+
+	.prc01__item {
+		position: relative;
+		padding-top: var(--space-8);
+	}
+
+	/* Le trait de liaison part du numéro et file vers l'étape suivante.
+	   Posé sur ::before de l'item, pas sur le conteneur : il s'arrête tout
+	   seul sur la dernière étape. */
+	.prc01__item::before {
+		content: "";
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: calc(var(--space-10) * -1);
+		height: 1px;
+		background: var(--color-border);
+	}
+
+	.prc01__item:last-child::before {
+		right: 0;
+	}
+
+	/* Le numéro est dans une PASTILLE RONDE, pas posé nu : relevé FORMAT.md
+	   §10. Fond crème, chiffre vert. */
+	.prc01__num {
+		display: grid;
+		place-items: center;
+		width: 3.25rem;
+		height: 3.25rem;
+		background: var(--color-bg-sunken);
+		border: 1px solid var(--color-accent-line);
+		border-radius: var(--radius-pill);
+		margin: 0 0 var(--space-6);
+		font-family: var(--brand-font-display);
+		font-size: var(--text-md);
+		font-weight: var(--weight-display);
+		letter-spacing: 0;
+		line-height: 1;
+		color: var(--color-accent);
+	}
+
+	.prc01__step-title {
+		margin: 0 0 var(--space-3);
+		font-family: var(--brand-font-display);
+		font-size: var(--text-lg);
+		font-weight: var(--weight-display);
+		letter-spacing: var(--tracking-heading);
+		line-height: var(--leading-snug);
+		color: var(--color-text);
+	}
+
+	.prc01__text {
+		margin: 0;
+		max-width: var(--measure);
+		font-size: var(--text-sm);
+		line-height: var(--leading-snug);
+		letter-spacing: var(--tracking-normal);
+		color: var(--color-text-muted);
+	}
+
+	.prc01 :focus-visible {
+		outline: var(--focus-width) solid var(--color-focus);
+		outline-offset: var(--focus-offset);
+	}
+
+	/* Point de rupture en dur : une media query ne lit pas une custom property. */
+	@media (max-width: 62rem) {
+		.prc01__list {
+			grid-template-columns: minmax(0, 1fr);
+			gap: var(--space-8);
+		}
+
+		/* Sous 62rem, le cadre passe au-dessus des étapes. */
+		.prc01__cols--media {
+			grid-template-columns: minmax(0, 1fr);
+			row-gap: var(--space-10);
+		}
+
+		/* Empilées, les étapes gardent le trait, mais cadré sur leur largeur :
+		   il ne pointe plus vers une étape suivante placée à droite, il coiffe
+		   l'étape. Il ne DISPARAÎT pas — vérifier le rendu avant d'écrire le
+		   contraire. */
+		.prc01__item::before {
+			right: 0;
+		}
+
+		.prc01__item {
+			padding-top: var(--space-6);
+		}
+
+		.prc01__num {
+			margin-bottom: var(--space-3);
+		}
+	}
+</style>

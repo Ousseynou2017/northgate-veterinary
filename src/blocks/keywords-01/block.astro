@@ -1,0 +1,268 @@
+---
+/**
+ * keywords-01 — ruban de mots-clés défilant
+ *
+ * Une liste courte de prestations ou de mots-clés, posés en ruban entre deux
+ * sections. Sert de respiration visuelle et de rappel de l'offre, pas de
+ * navigation : ce n'est pas un menu.
+ *
+ * Défilement continu coupé par prefers-reduced-motion, et remplacé par une
+ * ligne statique centrée. Rien n'est masqué, rien ne dépend du JavaScript.
+ *
+ * Voisin de logos-01, qui fait la même chose avec des images de marques.
+ * Ici ce sont des mots : pas de droit d'usage à vérifier, pas de désaturation.
+ */
+
+export interface KeywordItem {
+	/** Le mot affiché. */
+	label: string;
+	/** Lien optionnel vers la section correspondante. */
+	href?: string;
+}
+
+export interface Props {
+	/** Titre de section. Masqué par défaut : ce ruban n'a pas besoin d'en-tête visible. */
+	title?: string;
+	visibleTitle?: boolean;
+	keywords?: KeywordItem[];
+	/** Séparateur entre les mots. Purement décoratif, retiré des lecteurs d'écran. */
+	separator?: string;
+	/** Défilement continu. `false` = ligne statique centrée. */
+	marquee?: boolean;
+	/** Durée d'un tour complet, en secondes. Plus il y a de mots, plus il faut allonger. */
+	speed?: number;
+	/** `alt` fond clair teinté · `dark` bandeau sombre · `default` fond de page. */
+	tone?: "default" | "alt" | "dark" | "accent";
+	headingLevel?: "h2" | "h3";
+}
+
+const {
+	title = "Our services",
+	visibleTitle = false,
+	keywords = [
+		{ label: "PLACEHOLDER — WORD 1" },
+		{ label: "PLACEHOLDER — WORD 2" },
+		{ label: "PLACEHOLDER — WORD 3" },
+		{ label: "PLACEHOLDER — WORD 4" },
+		{ label: "PLACEHOLDER — WORD 5" },
+	],
+	separator = "✲",
+	marquee = true,
+	speed = 32,
+	tone = "dark",
+	headingLevel = "h2",
+} = Astro.props;
+
+const Heading = headingLevel;
+const isDark = tone === "dark" || tone === "accent";
+// Le ruban a besoin de deux passes identiques pour boucler sans saut.
+const track = marquee ? [...keywords, ...keywords] : keywords;
+---
+
+<section class={`kwd01 kwd01--${tone} ${marquee ? "kwd01--marquee" : ""} ${isDark ? "on-dark" : ""}`}>
+	<div class="kwd01__inner">
+		<Heading class={`kwd01__title ${visibleTitle ? "" : "kwd01__sr"}`}>{title}</Heading>
+
+		<div class="kwd01__viewport">
+			<ul class="kwd01__track" style={`--kwd-speed:${speed}s`}>
+				{
+					track.map((k, i) => {
+						const isClone = marquee && i >= keywords.length;
+						return (
+							<li class="kwd01__item" aria-hidden={isClone ? "true" : undefined}>
+								{k.href ? (
+									<a class="kwd01__link" href={k.href} tabindex={isClone ? -1 : undefined}>
+										{k.label}
+									</a>
+								) : (
+									<span class="kwd01__word">{k.label}</span>
+								)}
+								<span class="kwd01__sep" aria-hidden="true">{separator}</span>
+							</li>
+						);
+					})
+				}
+			</ul>
+		</div>
+	</div>
+</section>
+
+<style>
+	.kwd01,
+	.kwd01 *,
+	.kwd01 *::before,
+	.kwd01 *::after {
+		box-sizing: border-box;
+		min-width: 0;
+	}
+
+	.kwd01 {
+		font-family: var(--brand-font-body);
+		background: var(--color-bg);
+		color: var(--color-text);
+		padding-block: var(--space-8);
+		overflow-x: clip;
+	}
+
+	.kwd01--alt {
+		background: var(--color-bg-alt);
+	}
+
+	.kwd01--dark {
+		background: var(--brand-ink);
+	}
+
+	/* Le marqueur sur le VERT DE MARQUE plein. `on-dark` est posée en même
+	   temps, donc les mots passent en blanc — 7,65:1 sur ce vert. */
+	.kwd01.kwd01--accent {
+		background: var(--brand-accent);
+	}
+
+	.kwd01__inner {
+		max-width: var(--container);
+		margin-inline: auto;
+		padding-inline: var(--gutter);
+	}
+
+	.kwd01__title {
+		margin: 0 0 var(--space-6);
+		font-family: var(--brand-font-body);
+		font-size: var(--text-2xs);
+		font-weight: var(--weight-semibold);
+		letter-spacing: var(--tracking-eyebrow);
+		text-transform: uppercase;
+		text-align: center;
+		color: var(--color-text-subtle);
+	}
+
+	.kwd01__sr {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+
+	.kwd01__viewport {
+		overflow: hidden;
+	}
+
+	.kwd01__track {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: center;
+		gap: 0;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.kwd01__item {
+		display: flex;
+		align-items: center;
+	}
+
+	.kwd01__word,
+	.kwd01__link {
+		display: block;
+		font-family: var(--brand-font-display);
+		font-size: var(--text-2xl);
+		font-weight: var(--weight-display);
+		letter-spacing: var(--tracking-display);
+		line-height: var(--leading-heading);
+		white-space: nowrap;
+		color: var(--color-text);
+	}
+
+	.kwd01__link {
+		text-decoration: none;
+		border-radius: var(--radius-xs);
+		transition: color var(--dur) var(--ease);
+	}
+
+	.kwd01__link:hover {
+		color: var(--color-accent);
+	}
+
+	.kwd01__sep {
+		display: block;
+		padding-inline: var(--space-6);
+		font-size: var(--text-sm);
+		line-height: 1;
+		/* --color-accent sur ce fond très sombre mesure 3,92:1 : sous le seuil.
+		   --color-accent-loud (6,72:1) est le token dédié à ce cas. */
+		color: var(--color-accent-loud);
+	}
+
+	/* Sur le vert plein, --color-accent-loud tombe à 2,88:1 : mesuré, refusé.
+	   Le pastile vert d'eau rend 4,50:1. */
+	.kwd01--accent .kwd01__sep {
+		color: var(--color-accent-pastel);
+	}
+
+	.kwd01 :focus-visible {
+		outline: var(--focus-width) solid var(--color-focus);
+		outline-offset: var(--focus-offset);
+	}
+
+	/* ------------------------------------------------------------------ ruban */
+
+	.kwd01--marquee .kwd01__viewport {
+		/* Les bords s'estompent : le ruban ne se coupe pas net. */
+		mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+	}
+
+	.kwd01--marquee .kwd01__track {
+		flex-wrap: nowrap;
+		justify-content: flex-start;
+		width: max-content;
+		animation: kwd01-scroll var(--kwd-speed, 32s) linear infinite;
+	}
+
+	.kwd01--marquee .kwd01__viewport:hover .kwd01__track {
+		animation-play-state: paused;
+	}
+
+	@keyframes kwd01-scroll {
+		/* -50% = exactement une des deux passes : la boucle est invisible. */
+		to {
+			transform: translateX(-50%);
+		}
+	}
+
+	@media (max-width: 39.999rem) {
+		.kwd01__word,
+		.kwd01__link {
+			font-size: var(--text-lg);
+		}
+
+		.kwd01__sep {
+			padding-inline: var(--space-5);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.kwd01__link {
+			transition-duration: 0.01ms !important;
+		}
+
+		/* Mouvement coupé : le ruban redevient une ligne centrée, et le doublon
+		   masqué disparaît pour ne pas afficher deux fois chaque mot. */
+		.kwd01--marquee .kwd01__track {
+			animation: none;
+			width: auto;
+			flex-wrap: wrap;
+			justify-content: center;
+		}
+
+		.kwd01--marquee .kwd01__item[aria-hidden="true"] {
+			display: none;
+		}
+
+		.kwd01--marquee .kwd01__viewport {
+			mask-image: none;
+		}
+	}
+</style>

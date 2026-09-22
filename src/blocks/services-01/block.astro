@@ -1,0 +1,425 @@
+---
+/**
+ * services-01 — grille de cartes : icône + titre + texte + lien
+ *
+ * La carte entière est cliquable via un lien étendu (::after), mais c'est bien
+ * le <a> du titre qui porte le lien : un seul élément focusable par carte, un
+ * seul intitulé annoncé. Pas de div cliquable.
+ */
+
+export interface Service {
+	title: string;
+	text: string;
+	href?: string;
+	/** Clé d'icône intégrée, ou rien pour la marque par défaut. */
+	icon?: "toit" | "outil" | "bouclier" | "eclair" | "goutte" | "feuille"
+		| "patte" | "tonte" | "dent" | "bol" | "coeur" | "cloche";
+	linkLabel?: string;
+}
+
+export interface Props {
+	eyebrow?: string;
+	title?: string;
+	intro?: string;
+	services?: Service[];
+	/** 2, 3 ou 4 colonnes en grand écran. */
+	columns?: 2 | 3 | 4;
+	/**
+	 * Rang (base 1) de la carte peinte à l'accent — PEAU §6 : une carte sur six
+	 * est en pleine couleur, texte inversé. C'est le seul endroit de la grille
+	 * où l'accent occupe une surface. Passe `null` pour n'en peindre aucune ;
+	 * un rang au-delà du nombre de services ne peint rien.
+	 */
+	featuredIndex?: number | null;
+	tone?: "default" | "alt";
+	/**
+	 * `card` : chaque service dans une carte.
+	 * `bare` : ni carte ni fond, item centré, icône en haut. C'est la forme
+	 * de la référence (FORMAT.md §6) — six items qui respirent, pas six boîtes.
+	 */
+	variant?: "card" | "bare";
+	/** Niveau de titre de la section. h2 sauf cas particulier. */
+	headingLevel?: "h2" | "h3";
+}
+
+const {
+	eyebrow = "OUR SERVICES",
+	title = "What we do",
+	intro,
+	services = [
+		{ title: "Service one", text: "PLACEHOLDER — describe the service in one or two sentences, from the client's point of view.", href: "/prestations/une/", icon: "toit" },
+		{ title: "Service two", text: "PLACEHOLDER — describe the service in one or two sentences, from the client's point of view.", href: "/prestations/deux/", icon: "outil" },
+		{ title: "Service three", text: "PLACEHOLDER — describe the service in one or two sentences, from the client's point of view.", href: "/prestations/trois/", icon: "bouclier" },
+	],
+	columns = 3,
+	featuredIndex = 6,
+	tone = "default",
+	variant = "card",
+	headingLevel = "h2",
+} = Astro.props;
+
+const Heading = headingLevel;
+
+const paths: Record<string, string> = {
+	toit: "M3 11.5L12 4l9 7.5M5.5 10v9h13v-9",
+	outil: "M14.5 4.5a4 4 0 00-5.3 5.3L4 15v5h5l5.2-5.2a4 4 0 005.3-5.3l-3 3-2.2-2.2 3-3z",
+	bouclier: "M12 3l7.5 3v6c0 4.4-3.1 7.9-7.5 9-4.4-1.1-7.5-4.6-7.5-9V6L12 3z",
+	eclair: "M13 3L5 13.5h5.5L11 21l8-10.5h-5.5L13 3z",
+	goutte: "M12 3.5s6 6.4 6 10.2A6 6 0 016 13.7C6 9.9 12 3.5 12 3.5z",
+	feuille: "M20 4C10 4 4.5 8.5 4.5 15.5c0 1.6.4 3 1 4.2M20 4c0 9-5.5 13.5-13 13.5",
+	/* Jeu ANIMAL — FORMAT.md §6 : les icônes BTP d'origine n'ont rien à faire
+	   sur un cabinet vétérinaire. Tracé seul, 24×24, même graisse que les autres. */
+	patte: "M7.5 9.5a1.6 2.1 0 100-4.2 1.6 2.1 0 000 4.2zM12 8.3a1.7 2.2 0 100-4.4 1.7 2.2 0 000 4.4zM16.5 9.5a1.6 2.1 0 100-4.2 1.6 2.1 0 000 4.2zM12 11c3 0 5 2.3 5 4.4 0 1.8-1.5 3-3.4 3-.9 0-1.3-.4-1.6-.4s-.7.4-1.6.4c-1.9 0-3.4-1.2-3.4-3C7 13.3 9 11 12 11z",
+	tonte: "M6 4.5l6 7.5M18 4.5l-6 7.5M12 12v7.5M8 6.5a2 2 0 11-3-2.6 2 2 0 013 2.6zM16 6.5a2 2 0 103-2.6 2 2 0 00-3 2.6z",
+	dent: "M8.5 3.5C6 3.5 4.5 5.4 4.5 8c0 3.3 1 5.4 1.7 8.4.4 1.7.8 3.1 1.9 3.1s1.2-1.6 1.6-3.4c.3-1.3.6-2.1 2.3-2.1s2 .8 2.3 2.1c.4 1.8.5 3.4 1.6 3.4s1.5-1.4 1.9-3.1c.7-3 1.7-5.1 1.7-8.4 0-2.6-1.5-4.5-4-4.5-1.7 0-2.6.8-3.5.8s-1.8-.8-3.5-.8z",
+	bol: "M4 11h16c0 4.4-3.6 8-8 8s-8-3.6-8-8zM7.5 8.2c.6-1.4 2.3-2.2 4.5-2.2s3.9.8 4.5 2.2",
+	coeur: "M12 20s-7-4.5-7-9.2A3.8 3.8 0 0112 8a3.8 3.8 0 017 2.8C19 15.5 12 20 12 20z",
+	cloche: "M18 15.5V11a6 6 0 10-12 0v4.5L4.5 18h15L18 15.5zM10 20.5a2 2 0 004 0",
+};
+---
+
+<section class={`svc01 svc01--${tone} svc01--${variant}`}>
+	<div class="svc01__inner">
+		<header class="svc01__head svc01__head--center">
+			{
+				eyebrow && (
+					<p class="ctc01__eyebrow">
+						<span class="ctc01__eyebrow-dot" aria-hidden="true" />
+						{eyebrow}
+					</p>
+				)
+			}
+			<Heading class="svc01__title">{title}</Heading>
+			{intro && <p class="svc01__intro">{intro}</p>}
+		</header>
+
+		<ul class="svc01__grid" style={`--svc-cols:${columns}`}>
+			{
+				services.map((s, i) => (
+					<li class="svc01__item">
+						<article class={`svc01__card${i + 1 === featuredIndex ? " svc01__card--feature" : ""}`}>
+							<span class="svc01__icon" aria-hidden="true">
+								<svg viewBox="0 0 24 24" width="24" height="24" focusable="false">
+									<path d={paths[s.icon ?? "outil"] ?? paths.outil} fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+								</svg>
+							</span>
+
+							<h3 class="svc01__card-title">
+								{s.href ? (
+									<a class="svc01__link" href={s.href}>
+										{s.title}
+									</a>
+								) : (
+									s.title
+								)}
+							</h3>
+
+							<p class="svc01__text">{s.text}</p>
+
+							{s.href && (
+								<span class="svc01__more" aria-hidden="true">
+									{s.linkLabel ?? "Learn more"}
+									<svg viewBox="0 0 14 10" width="14" height="10" focusable="false">
+										<path d="M1 5h11M8.5 1.5L12 5l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+									</svg>
+								</span>
+							)}
+						</article>
+					</li>
+				))
+			}
+		</ul>
+	</div>
+</section>
+
+<style>
+	.svc01,
+	.svc01 *,
+	.svc01 *::before,
+	.svc01 *::after {
+		box-sizing: border-box;
+	}
+
+	.svc01 {
+		font-family: var(--brand-font-body);
+		background: var(--color-bg);
+		color: var(--color-text);
+		padding-block: var(--space-section);
+	}
+
+	.svc01--alt {
+		background: var(--color-bg-alt);
+	}
+
+	.svc01__inner {
+		max-width: var(--container);
+		margin-inline: auto;
+		padding-inline: var(--gutter);
+	}
+
+	/* ------------------------------------------------------------------ entête */
+
+	.svc01__head {
+		max-width: var(--measure);
+		margin-bottom: var(--space-12);
+	}
+
+	/* Titre + étiquette centrés, largeur bornée : le titre de section n'est
+	   plus calé à gauche. */
+	.svc01__head--center {
+		max-width: var(--measure-heading);
+		margin-inline: auto;
+		text-align: center;
+	}
+
+	.svc01__head--center .ctc01__eyebrow {
+		justify-content: center;
+	}
+
+	.svc01__title {
+		margin: 0;
+		font-family: var(--brand-font-display);
+		font-size: var(--text-2xl);
+		font-weight: var(--weight-display);
+		line-height: var(--leading-heading);
+		letter-spacing: var(--tracking-heading);
+		text-wrap: balance;
+	}
+
+	.svc01__intro {
+		margin: var(--space-5) 0 0;
+		font-size: var(--text-md);
+		line-height: var(--leading-snug);
+		color: var(--color-text-muted);
+	}
+
+	/* ------------------------------------------------------------------ grille */
+
+	.svc01__grid {
+		display: grid;
+		grid-template-columns: repeat(var(--svc-cols, 3), minmax(0, 1fr));
+		gap: var(--space-6);
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.svc01__item {
+		display: flex;
+	}
+
+	/* PEAU §6 : 24px de rayon, padding 30/24, fond crème, AUCUNE bordure —
+	   la séparation se fait par le crème sur le blanc, pas par un filet. */
+	.svc01__card {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		padding: var(--space-8) var(--space-6);
+		background: var(--color-bg-alt);
+		border: 0;
+		border-radius: var(--radius-md);
+		transition:
+			background-color var(--dur) var(--ease),
+			box-shadow var(--dur) var(--ease),
+			transform var(--dur) var(--ease);
+	}
+
+	/* Section déjà crème : la carte reprend le blanc, sinon elle disparaît. */
+	.svc01--alt .svc01__card {
+		background: var(--color-bg);
+	}
+
+	/* Survol : la carte se soulève et la pastille d'icône s'inverse. Plus de
+	   bordure à teinter — il n'y a plus de bordure. */
+	.svc01__card:hover {
+		box-shadow: var(--shadow-md);
+		transform: translateY(-3px);
+	}
+
+	/* ------------------------------------------------- carte mise en avant
+	   PEAU §6 : pleine couleur d'accent, texte inversé. Les tokens sémantiques
+	   sont redéfinis DANS la carte : icône, texte secondaire, filet et lien
+	   suivent sans une règle de plus. --color-on-accent passe à l'accent pour
+	   que la pastille d'icône s'inverse correctement au survol. */
+	.svc01__card--feature,
+	.svc01--alt .svc01__card--feature {
+		--color-text: var(--brand-surface);
+		--color-text-muted: color-mix(in oklab, var(--brand-surface) 88%, var(--brand-accent));
+		--color-accent: var(--brand-surface);
+		--color-on-accent: var(--brand-accent);
+		--color-accent-soft: color-mix(in oklab, var(--brand-surface) 18%, transparent);
+		--color-border: color-mix(in oklab, var(--brand-surface) 32%, transparent);
+		color: var(--color-text);
+		background: var(--brand-accent);
+	}
+
+	.svc01__icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: var(--space-12);
+		height: var(--space-12);
+		margin-bottom: var(--space-6);
+		color: var(--color-accent);
+		background: var(--color-accent-soft);
+		border-radius: var(--radius-md);
+		transition:
+			color var(--dur) var(--ease),
+			background-color var(--dur) var(--ease);
+	}
+
+	.svc01__card:hover .svc01__icon {
+		color: var(--color-on-accent);
+		background: var(--color-accent);
+	}
+
+	.svc01__card-title {
+		margin: 0 0 var(--space-3);
+		font-family: var(--brand-font-display);
+		font-size: var(--text-lg);
+		font-weight: var(--weight-display);
+		line-height: var(--leading-heading);
+		letter-spacing: var(--tracking-heading);
+	}
+
+	.svc01__link {
+		color: inherit;
+		text-decoration: none;
+	}
+
+	/* Lien étendu : toute la carte est cliquable, mais un seul élément est
+	   focusable et un seul intitulé est annoncé. */
+	.svc01__link::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+	}
+
+	.svc01__text {
+		margin: 0;
+		font-size: var(--text-base);
+		line-height: var(--leading-body);
+		color: var(--color-text-muted);
+	}
+
+	.svc01__more {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-2);
+		margin-top: var(--space-6);
+		padding-top: var(--space-5);
+		border-top: 1px solid var(--color-border);
+		font-size: var(--text-sm);
+		font-weight: var(--weight-semibold);
+		color: var(--color-accent);
+	}
+
+	.svc01__more svg {
+		transition: transform var(--dur) var(--ease);
+	}
+
+	.svc01__card:hover .svc01__more svg {
+		transform: translateX(4px);
+	}
+
+	/* L'anneau de focus entoure la carte entière, pas juste le titre. */
+	.svc01__card:has(.svc01__link:focus-visible) {
+		outline: var(--focus-width) solid var(--color-focus);
+		outline-offset: var(--focus-offset);
+	}
+
+	.svc01__link:focus-visible {
+		outline: none;
+	}
+
+	/* ------------------------------------------------------------------
+	   VARIANTE NUE — FORMAT.md §6. Ni carte, ni fond, ni bordure, ni ombre :
+	   l'item est centré, icône en haut. La carte peinte à l'accent disparaît
+	   aussi : sur la référence, les six items sont identiques.
+	   ------------------------------------------------------------------ */
+	.svc01--bare .svc01__card,
+	.svc01--bare .svc01__card--feature {
+		padding: 0;
+		text-align: center;
+		background: transparent;
+		border: 0;
+		box-shadow: none;
+		color: var(--color-text);
+	}
+
+	.svc01--bare .svc01__card:hover {
+		transform: none;
+		box-shadow: none;
+	}
+
+	.svc01--bare .svc01__icon {
+		margin-inline: auto;
+		color: var(--color-accent);
+		background: transparent;
+		border: 0;
+		width: 3rem;
+		height: 3rem;
+	}
+
+	.svc01--bare .svc01__icon svg {
+		width: 2.25rem;
+		height: 2.25rem;
+	}
+
+	.svc01--bare .svc01__card:hover .svc01__icon {
+		color: var(--color-accent);
+		background: transparent;
+	}
+
+	.svc01--bare .svc01__grid {
+		gap: var(--space-12) var(--space-10);
+	}
+
+	.svc01--bare .svc01__text {
+		max-width: 22rem;
+		margin-inline: auto;
+	}
+
+	.svc01 :focus-visible {
+		outline: var(--focus-width) solid var(--color-focus);
+		outline-offset: var(--focus-offset);
+	}
+
+	/* ---------------------------------------------------------------- écrans */
+
+	@media (max-width: 61.999rem) {
+		.svc01__grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+
+		/* Une grille de 3 qui tombe à 2 laisse une carte orpheline face au vide :
+		   la dernière prend toute la largeur si le compte est impair. */
+		.svc01__item:last-child:nth-child(odd) {
+			grid-column: 1 / -1;
+		}
+	}
+
+	@media (max-width: 39.999rem) {
+		.svc01__grid {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.svc01__item:last-child:nth-child(odd) {
+			grid-column: auto;
+		}
+
+		.svc01__card {
+			padding: var(--space-6);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.svc01__card,
+		.svc01__icon,
+		.svc01__more svg {
+			transition-duration: 0.01ms !important;
+		}
+	}
+</style>
