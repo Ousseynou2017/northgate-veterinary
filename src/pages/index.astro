@@ -61,7 +61,12 @@ const IMG = "/img";
 // comme une maquette assumée. Le `noindex` et les deux mentions « concept
 // piece » restent ce qui dit que le cabinet n'existe pas.
 // ---------------------------------------------------------------------------
-const SITE = "https://northgate.example.com/";
+// L'URL PUBLIQUE réelle. `canonical` et `og:url` doivent désigner la page
+// telle qu'elle est servie, sinon le canonical envoie les robots sur un
+// domaine qui n'existe pas et l'aperçu de partage pointe dans le vide.
+// L'adresse e-mail, elle, reste sur `.example.com` : c'est une coordonnée
+// fictive, pas une URL de page.
+const SITE = "https://northgate-veterinary.vercel.app/";
 const TEL = "(555) 010-0142";
 const TEL_HREF = "tel:+15550100142";
 const MAIL = "hello@northgate.example.com";

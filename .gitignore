@@ -8,10 +8,11 @@ dist/
 # ils n'ont rien à faire dans l'historique d'un dépôt public.
 .cache-images/
 
-# Secrets
+# Secrets et liaison Vercel
 .env
 .env.*
 !.env.local.example
+.vercel/
 
 # Système
 Thumbs.db
