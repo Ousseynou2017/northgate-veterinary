@@ -732,7 +732,13 @@ const isCurrent = (href?: string) => !!href && href !== "/" && currentPath.start
 			top: 0;
 			right: 0;
 			z-index: var(--z-panel);
-			display: flex;
+			/* Fermé, le panneau n'a AUCUNE boîte. Poussé hors écran par
+			   translateX(100%) seul, il existait 282 à 352px à droite de la
+			   fenêtre et Chrome le comptait par moments dans la largeur de la
+			   page au chargement : défilement horizontal. `display: none`
+			   supprime la boîte en CSS pur, avant tout JS. Le glissement est
+			   gardé par @starting-style + allow-discrete ci-dessous. */
+			display: none;
 			flex-direction: column;
 			align-items: stretch;
 			justify-content: flex-start;
@@ -747,15 +753,28 @@ const isCurrent = (href?: string) => !!href && href !== "/" && currentPath.start
 			box-shadow: var(--shadow-lg);
 			transform: translateX(100%);
 			visibility: hidden;
+			/* allow-discrete : à la fermeture, `display` ne passe à none
+			   qu'après le glissement. Navigateur trop ancien : ouverture et
+			   fermeture sans glissement, rien d'autre ne change. */
 			transition:
 				transform var(--dur-slow) var(--ease),
-				visibility 0s linear var(--dur-slow);
+				visibility 0s linear var(--dur-slow),
+				display var(--dur-slow) allow-discrete;
 		}
 
 		.nav01__nav[data-open="true"] {
+			display: flex;
 			transform: translateX(0);
 			visibility: visible;
 			transition-delay: 0s;
+		}
+
+		/* Point de départ du glissement à l'ouverture : sans lui, un élément
+		   qui sort de `display: none` apparaît directement à l'arrivée. */
+		@starting-style {
+			.nav01__nav[data-open="true"] {
+				transform: translateX(100%);
+			}
 		}
 
 		.nav01__list {
