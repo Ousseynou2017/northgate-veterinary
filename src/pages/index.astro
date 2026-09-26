@@ -663,9 +663,13 @@ const galerie = Array.from({ length: 8 }, (_, i) => ({
 			}
 
 			/* Sous 62rem about-01 empile ses deux colonnes : la gouttière de 104
-			   deviendrait un trou horizontal inutile. */
+			   deviendrait un trou horizontal inutile. Les sélecteurs reprennent
+			   ceux des pistes ci-dessus (3 classes) : un simple
+			   `.lyt-media-110 .abt01__inner` (2 classes) perdait contre eux et
+			   laissait le bloc en 2 colonnes jusqu'à 320 px. */
 			@media (max-width: 61.999rem) {
-				.lyt-media-110 .abt01__inner {
+				.lyt-media-110 .abt01--img-right .abt01__inner,
+				.lyt-media-110 .abt01--img-left .abt01__inner {
 					grid-template-columns: minmax(0, 1fr);
 					column-gap: 0;
 				}
